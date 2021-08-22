@@ -21,9 +21,8 @@ linesCURRENT    = 0
 timeSTART       = 0
 timeNOW         = 0
 TRANSFULL       = False
-r_last          = re.compile(r'"(.*)"( nointeract)?$'), 1, -1
-
-# r_last = re.compile(r'"(.*)"$'), 1, -1
+reTrans          = re.compile(r'"(.*)"( nointeract)?$'), 0, 0
+# reTrans = re.compile(r'"(.*)"$'), 1, -1
 
 
 def switchPause():        #controls back and forth switching between Pause and Resume
@@ -131,10 +130,12 @@ def lineTranslate(all_file_text, currentFilename, timeSTART):          # Ище�
         else:
             btnPause["text"]='Pause'
 
-        result = re.search(r_last[0], line)
+        result = re.search( reTrans[0], line)
 
         if result and skip == 0:                            # если нашли строку с парой кавычек и это не переведенная строка ( не скип)
-            oLine       = str( result.group(0))[r_last[1]:r_last[2]]
+            # oLine       = str( result.group(0))[reTrans[1]:reTrans[2]]
+
+            oLine       = result.group(1)
             percLine    = ( count / lText) * 100
             percTotal   = round( ( linesCURRENT / linesALL) * 100, 2)
 
@@ -228,9 +229,6 @@ def scanDirs():
     fileTRans   = []
     count       = 0
     linesALL    = 0
-
-    # kjhkdjhkjh = 0
-
 
     makeNewDirs()
 
