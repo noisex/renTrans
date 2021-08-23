@@ -6,6 +6,8 @@ import threading
 
 from textblob import TextBlob            # TextBlob
 from datetime import datetime
+# from googletrans import Translator
+from deep_translator import GoogleTranslator
 
 import tkinter as tk
 import tkinter.ttk as ttk
@@ -61,9 +63,6 @@ def correct(tLine):                                                 # корре
 
     fix = fix.replace( 'Какие? ', 'Что? ')
     fix = fix.replace( 'Какой? ', 'Что? ')
-    fix = fix.replace( 'nointerac', '" nointeract')
-    fix = fix.replace( 'Nointerac', '" nointeract')
-
     return fix
 
 
@@ -99,6 +98,17 @@ def findSkobki( tLine, oLine):                                      # замен
 
     return tLine
 
+def translateGooble( oLine):
+    # time.sleep( 0.1)
+
+    tLine = translated = GoogleTranslator( source='en', target='ru').translate( oLine)
+
+    # translated = GoogleTranslator(source='auto', target='german').translate_file('path/to/file')
+
+    # tBlob = str( oBlob.translate(to='ru'))                              # Translate
+    # tLine = str( tBlob)
+    # print( translator)
+    return correct( tLine)
 
 def translate_blob(oLine):                                          # возвращает перевод текущей строки
     # r = random.uniform( 0.35, 0.4)                                       # Рандомная пауза между запросами на перевод
@@ -161,7 +171,9 @@ def lineTranslate(all_file_text, currentFilename, timeSTART):          # Ище�
                 findWords = re.findall(r'(\w+)', oLine)                                 # если в строке есть слово, то пытаемся перевести
 
                 if findWords:
-                    tLine = translate_blob( oLine)                                      # пытаемся перевести
+                    # tLine = oLine
+                    tLine = translateGooble( oLine)
+                    # tLine = translate_blob( oLine)                                      # пытаемся перевести
                 else:
                     tLine = oLine                                                       # если нет, то берем орининальную строку
 
