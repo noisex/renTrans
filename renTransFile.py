@@ -2,7 +2,6 @@ import os
 import re
 import time
 import threading
-import multiprocessing
 
 import tkinter as tk
 import tkinter.ttk as ttk
@@ -15,7 +14,7 @@ dictZamena  = {}
 fileTRans   = []
 fileStat    = {}
 threadSTOP  = False
-proc = False
+allStart    = False
 
 reTrans     = re.compile(r'"(.*\w+.*)"( nointeract)?$'), 0, 0
 reBrackets  = [
@@ -24,6 +23,9 @@ reBrackets  = [
     '(\\%\\(.+?\\))'        # процент со скобкой - %()
 ]
 
+def print( line):
+    textLogs.insert( tk.END, '[{}] {}\n'.format( time.strftime('%H:%M:%S'), str( line)))
+    textLogs.see( tk.END)
 
 def update():
     root.update()
@@ -45,7 +47,6 @@ def makeNewDirs():
 
 
 def clearFolder( fileExt='transl', dirName='temp'):
-    # dirName = "/Users/ben/downloads/"
     test = os.listdir(dirName)
 
     for item in test:
@@ -68,13 +69,11 @@ def filesStats( fileList):
     fileStat = {}
     i        = 0
 
-    # listFile.delete(0, tk.END)
-    # listFile.insert( tk.END,  "{:^33}|{:^10}|{:^7}".format( 'File', 'Size', 'Lines'))
-
     for filePath in fileList:                           # Находим файлы для перевода в дирректории
 
         fileName = os.path.basename( filePath)
         fileSize = os.path.getsize( filePath)
+        filesMax = len( fileList)
         i        += 1
 
         allFile = []
@@ -92,7 +91,6 @@ def filesStats( fileList):
                 # wordslist = line.split()
                 # words += len(wordslist)
                 # characters += sum(len(word) for word in wordslist)
-        # print( filePath, fileName, words, characters, lines, linesLen)
         if fileName not in fileStat: fileStat[fileName] = {}
 
         fileStat[fileName]['name'] = fileName
@@ -101,12 +99,12 @@ def filesStats( fileList):
         fileStat[fileName]['path'] = filePath
         fileStat[fileName]['lines'] = lines
         fileStat[fileName]["chars"] = linesLen
-        fileStat[fileName]['tempFLine'] = ''
+        fileStat[fileName]['tempFLine'] = 0
         fileStat[fileName]['tempFSize'] = 0
+        fileStat[fileName]['filesMax'] = filesMax
+        fileStat[fileName]['filesCur'] = i
 
-        # listFile.insert( tk.END,  "{:2}|{:<30}|{:>10,}|{:>7,}".format( i, fileName, fileSize, lines))
     listFileUpdate( fileStat)
-
     return fileStat
 
 
@@ -167,7 +165,7 @@ def makeTempFiles( fileTRans):
 
     clearFolder( 'tmp')
     clearFolder( 'transl')
-
+    print( "start creating temp files...")
     global dictZamena
 
     dictZamena = {}
@@ -190,6 +188,7 @@ def makeTempFiles( fileTRans):
             tmpFileName   = 'temp\\{}.tmp'.format( str( fileName))
             transFileName = 'temp\\{}.transl'.format( str( fileName))
             tmpFile       = open( tmpFileName, 'w', encoding='utf-8')
+            # print( 'create tempFile [' + fileName + '] done')
 
             for line in fileText:
 
@@ -207,7 +206,6 @@ def makeTempFiles( fileTRans):
                 else:
                     skip = 0
 
-
             fileStat[fileName]['tempFSize'] = fileSize
             fileStat[fileName]['tempFLine'] = lines
             tmpFile.close()
@@ -220,19 +218,27 @@ def makeTempFiles( fileTRans):
 
     textBox['state'] = tk.DISABLED
     listFileUpdate(fileStat)
+    print( "temp files done!\n")
 
 
 
 def tryToTranslate( oLine, lineSize, file):
-    print(" -=> ", lineSize, file)
 
-    # tLine       = ""
-    # fileName    = os.path.basename( file)
-    # tmpFileName = 'temp\\{}.transl'.format( str( fileName))
-    tLine       = GoogleTranslator( source='en', target='ru').translate( oLine)
+    fileName     = 'temp\\{}.transl'.format( str( file))
+    fileTempSize = fileStat[file]['tempFLine']
+    filesMax     = fileStat[file]['filesMax']
+    filesCur     = fileStat[file]['filesCur']
+    tLine        = GoogleTranslator( source='en', target='ru').translate( oLine)
+
+    if fileTempSize != 0:
+        fileReadProc = ( lineSize / fileTempSize) * 100
+    else:
+        fileReadProc = 0
+
+    print( '-=> {:5}% {:2}/{} [{}]'.format( round( fileReadProc, 1), filesCur, filesMax, file))
 
     if tLine:
-        f = open( file,'a', encoding='utf-8')
+        f = open( fileName,'a', encoding='utf-8')
         f.write( tLine + '\n')
         f.close()
 
@@ -265,14 +271,15 @@ def tempReplace( fileTRans):
 
 
 def readTmpToTrans( fileTRans):
+    global allStart
     clearFolder( 'transl')
+    print( 'start translating...')
 
     for file in fileTRans:
 
         fileName        = os.path.basename( file)
-        fileNameTrans   = 'temp\\{}.transl'.format( str( fileName))
         fileNameTemp    = 'temp\\{}.tmp'.format( str( fileName))
-        # fileCount       = 0
+        lineCount       = -1
 
         with open( fileNameTemp, encoding='utf-8') as f:
 
@@ -281,21 +288,26 @@ def readTmpToTrans( fileTRans):
             fileAllText = allFile.split('\n')
 
             for line in fileAllText:
-                # lineCount += 1
 
                 if not getattr( threadSTOP, "do_run"): return
 
-                lineTemp = lineTemp + line + '\n'
-
-                lineSize = len( lineTemp)
+                lineCount    += 1
+                lineTemp     = lineTemp + line + '\n'
+                lineSize     = len( lineTemp)
 
                 if lineSize >= 4700:
-                    tryToTranslate( lineTemp, lineSize, fileNameTrans)
+                    tryToTranslate( lineTemp, lineCount, fileName)
                     lineTemp    = ""
 
             if len( lineTemp) >= 5:
-                tryToTranslate( lineTemp, lineSize, fileNameTrans)
+                tryToTranslate( lineTemp, lineCount, fileName)
                 lineTemp    = ""
+
+    threadSTOP.do_run = False
+    print( 'translating done!\n')
+    if allStart:
+        allStart = False
+        compileTrans( fileTRans)
 
 
 def treatTranslate( fileTRans):
@@ -315,6 +327,7 @@ def treatTranslate( fileTRans):
 
 def compileTrans( fileTRans):
 
+    print( 'start compile renpy files...')
     for file in fileTRans:
 
         lineCount       = -1
@@ -352,12 +365,7 @@ def compileTrans( fileTRans):
                     rLine = str( rLine.replace("    old ", "    new "))
 
                     fileAllText[lineCount + 1] = rLine                                             # записываем ее в массив как следующую строку
-
-                    # print( file, lineCount, tLine, rLine)
-
                     lineFoundCount = lineFoundCount + 1
-                    # tmpFile.write(str( oLine) + '\n')
-                    # print( oLine)
 
                 elif result and len( result.group(1)) < 1:
                     lineFoundCount = lineFoundCount + 1
@@ -371,26 +379,29 @@ def compileTrans( fileTRans):
             for i in fileAllText:
                 new_rpy_tr.write(str(i) + '\n')
 
-            print( "File done:", fileName)
+            # print( "make file [" + fileName + '] done')
             new_rpy_tr.close()
+
+    print( 'compile renpy files done!!!\n')
+    print( 'можно копировать все это ( папка /transl/) обратно в игру ( папка /game/tl/rus/)')
 
 
 def rescanFolders():
     makeNewDirs()
-
     global fileTRans
     global fileStat
-
     fileTRans = listTransFiles()
     fileStat  = filesStats( fileTRans)
-
     return fileTRans, fileStat
 
-def justTranslate( fileTRans):
+def justTranslate():
+    global fileTRans
+    global allStart
+    allStart = True
+
+    rescanFolders()
     makeTempFiles( fileTRans)
     treatTranslate( fileTRans)
-    compileTrans( fileTRans)
-
 
 #################################################################################################################
 class CreateToolTip(object):
@@ -449,15 +460,18 @@ class CreateToolTip(object):
 
 root= tk.Tk()
 root.minsize( 400, 300)
-root.geometry("800x400")
+root.geometry("1000x400")
 
 root.columnconfigure(0, weight=0, minsize=50)
 root.columnconfigure(1, weight=0, minsize=50)
 root.columnconfigure(2, weight=1, minsize=50)
-
+root.rowconfigure(   0, weight=2, pad=5)
 
 listFile = tk.Listbox( root, selectmode=tk.NORMAL, height=4, width=53, font=("Consolas", 8))
+textLogs = tk.Text( root, height=4, width=53, font=("Consolas", 8))
+
 listFile.grid( row=0, column=0, sticky="NSEW", padx=5, pady=5)
+textLogs.grid( row=0, column=2, sticky="NSEW", padx=5, pady=5)
 
 rescanFolders()
 
@@ -476,9 +490,9 @@ textTrans.grid(row=0, column=1, sticky="NSWE", padx=5)
 btnTLScan       = tk.Button( root, text="0 rescan tl folder",   width=15, height=1, command= lambda: rescanFolders())
 btnMakeTemp     = tk.Button( root, text="1 make temp files",    width=15, height=1, command= lambda: makeTempFiles( fileTRans))
 btnTempRepl     = tk.Button( root, text="2 tags replace",       width=15, height=1, command= lambda: tempReplace( fileStat))
-btnTranslate    = tk.Button( root, text="3 translate start",     width=15, height=1, command= lambda: treatTranslate( fileTRans))
+btnTranslate    = tk.Button( root, text="3 translate start",    width=15, height=1, command= lambda: treatTranslate( fileTRans))
 btnMakeRPY      = tk.Button( root, text="4 make Renpy files",   width=15, height=1, command= lambda: compileTrans( fileTRans))
-btnALL          = tk.Button( root, text="just Translate",       width=15, height=1, command= lambda: justTranslate( fileTRans))
+btnALL          = tk.Button( root, text="just Translate",       width=15, height=1, command= justTranslate)
 
 btnTLScan.grid(   row=1, column=0, sticky=tk.W)
 btnMakeTemp.grid( row=1, column=0, sticky=tk.N)
@@ -505,16 +519,8 @@ button6_ttp = CreateToolTip(btnALL,         'Одна кнопка для все
 root.after(1000, update)
 root.mainloop()
 
-# makeTempFiles( fileTRans)
 
-# for fileName in fileStat:
-#     fs = fileStat[fileName]
-
-#     print( "{:>30}| Size: {:9,} | Lines: {:6} | Chars: {:7} | tempFSize [{}]".format( fs['name'], fs['size'], fs['lines'], fs['chars'], fs['tempFSize']))
-
-
-# readTmpToTrans( fileTRans)
-# compileTrans( fileTRans)
+# i = 5 if a > 7 else 0
 
 
 # >>> a_dict = {'color': 'blue', 'fruit': 'apple', 'pet': 'dog'}
@@ -549,46 +555,23 @@ root.mainloop()
 # 5000.0
 # 5600.0
 
-############################
-# # Read in the file
-# with open('file.txt', 'r') as file :
-#   filedata = file.read()
-
-# # Replace the target string
-# filedata = filedata.replace('ram', 'abcd')
-
-# # Write the file out again
-# with open('file.txt', 'w') as file:
-#   file.write(filedata)
-###################################
 
 
 
+# def a():
+#     t = threading.currentThread()
+#     while getattr(t, "do_run", True):
+#     print('Do something')
+#     time.sleep(1)
 
+# def getThreadByName(name):
+#     threads = threading.enumerate() #Threads list
+#     for thread in threads:
+#         if thread.name == name:
+#             return thread
 
-
-
-# lineSize = 0
-# for file in fileTRans:
-#     i += 1
-#         translated = GoogleTranslator( source='en', target='ru').translate_file( tmpFileName)
-#         if translated:
-#             transFileName = 'tl\\{}.trans'.format( str( file_name))
-#             transFile = open( transFileName, 'w', encoding='utf-8')
-#             print( translated)
-#             print( lineSize)
-#             # for line in translated:
-#                 # print( line)
-#             transFile.write( translated)
-#             transFile.close()
-
-
-# def terTest( fileTRans):
-#     # while getattr( threadSTOP, "do_run", True):
-#     while True:
-#         myAttr = getattr( threadSTOP, "do_run")
-#         print( "sadsadsa", myAttr)
-#         time.sleep( 1)
-#         if not myAttr:
-#             return
-#     print("Stopping as you wish.")
+# threading.Thread(target=a, name='228').start() #Init thread
+# t = getThreadByName('228') #Get thread by name
+# time.sleep(5)
+# t.do_run = False #Signal to stop thread
+# t.join()
