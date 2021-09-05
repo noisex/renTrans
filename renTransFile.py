@@ -2,27 +2,31 @@ import os
 import re
 import time
 import threading
-
 import tkinter as tk
-import tkinter.ttk as ttk
+# import tkinter.ttk as ttk
 
+# from deep_translator import MyMemoryTranslator
 from deep_translator import GoogleTranslator
 
 ###############################################################################################################################
 
-# dictZamena  = {}
 fileTRans   = []
 fileStat    = {}
 threadSTOP  = False
 allStart    = False
+TRLEN       = 4700 # 4700 for GoogleTranslate
+# TRWAIT      = 0
 
 reFind      = '(\\[.+?\\])'
-reTrans     = re.compile(r'"(.*\w+.*)"( nointeract)?$'), 0, 0
+reTrans     = re.compile(r'"(.*)"( nointeract)?$'), 0, 0
+# reTrans     = re.compile(r'"(.*\w+.*)"( nointeract)?$'), 0, 0
 reBrackets  = [
     '(\\[.+?\\])',          # квадратные скобки  - []
     '({.+?})',              # фигурные скобки    - {}
     '(\\%\\(.+?\\))'        # процент со скобкой - %()
 ]
+
+fileSkip    = [ 'gui.rpy', "common.rpy", "options.rpy", "screens.rpy", 'xxx_transparent.rpy', 'xxx_toggle_menu.rpy' ]
 
 #################################################################################################################
 class CreateToolTip(object):
@@ -135,10 +139,11 @@ def listTransFiles():
     filesAll = []
     for top, dirs, files in os.walk('./tl/'):                           # Находим файлы для перевода в дирректории
         for nm in files:
-            filesAll.append(os.path.join(top, nm))
+            if nm not in fileSkip:
+                filesAll.append(os.path.join(top, nm))
 
     print( 'make listFiles')
-    return list(filter(lambda x: x.endswith('.rpy'), filesAll))
+    return sorted( list(filter(lambda x: x.endswith('.rpy'), filesAll)))
 
 
 def listFileStats( fileList):
@@ -181,10 +186,9 @@ def listFileStats( fileList):
         fileStat[fileName]['filesCur'] = i
 
     listFileUpdate( fileStat)
-    print( 'make filesStats')
     return fileStat
 
-
+# TODO процент с цыфрой без экрана
 def findCorrect( fix):                                                 # корректировка всяких косяков первода, надо перписать...
 
     fix = fix.replace(' ...', '...')
@@ -200,11 +204,14 @@ def findCorrect( fix):                                                 # кор�
 
     fix = fix.replace( 'Какие?', 'Что?')
     fix = fix.replace( 'Какие!', 'Что!')
-    fix = fix.replace( 'Какие..', 'Что..')
+    fix = fix.replace( 'Какие.', 'Что.')
 
     fix = fix.replace( 'Какой?', 'Что?')
     fix = fix.replace( 'Какой!', 'Что!')
-    fix = fix.replace( 'Какой..', 'Что..')
+    fix = fix.replace( 'Какой.', 'Что.')
+
+    fix = fix.replace( 'Прохладный!', 'Здорово!')
+
 
     x = fix.find( 'Какие')
     if x >= 0:
@@ -279,6 +286,10 @@ def tryToTranslate( oLine, lineSize, file):
     fileTempSize = fileStat[file]['tempFLine']
     filesMax     = fileStat[file]['filesMax']
     filesCur     = fileStat[file]['filesCur']
+
+    # time.sleep( TRWAIT)
+
+    # tLine       = MyMemoryTranslator( source='en', target='ru').translate( oLine)
     tLine        = GoogleTranslator( source='en', target='ru').translate( oLine)
 
     if fileTempSize != 0:
@@ -299,7 +310,6 @@ def makeTempFiles( fileTRans):
     clearFolder( 'tmp')
     clearFolder( 'transl')
     print( "start creating temp files...")
-    # global dictZamena
 
     dictZamena = {}
     textTag['state'] = tk.NORMAL
@@ -327,7 +337,8 @@ def makeTempFiles( fileTRans):
 
                 result = re.search( reTrans[0], line)
 
-                if result and len( result.group(1)) >= 1 and skip == 0:                            # если нашли строку с парой кавычек и это не переведенная строка ( не скип)
+                if result and skip == 0:                            # если нашли строку с парой кавычек и это не переведенная строка ( не скип)
+                #and len( result.group(1)) >= 1
                     skip     = 1
                     lines    += 1
                     oLine    = result.group(1)
@@ -343,7 +354,6 @@ def makeTempFiles( fileTRans):
             fileStat[fileName]['tempFLine'] = lines
             tmpFile.close()
 
-        # incomes = {'apple': 5600.00, 'orange': 3500.00, 'banana': 5000.00}
         sorted_income = {k: dictZamena[k] for k in sorted(dictZamena)}
 
     for zamane in sorted_income:
@@ -384,11 +394,11 @@ def makeTransFiles( fileTRans):
                 lineTemp     = lineTemp + line + '\n'
                 lineSize     = len( lineTemp)
 
-                if lineSize >= 4700:
+                if lineSize >= TRLEN:
                     tryToTranslate( lineTemp, lineCount, fileName)
                     lineTemp    = ""
 
-            if len( lineTemp) >= 5:
+            if len( lineTemp) >= 1:
                 tryToTranslate( lineTemp, lineCount, fileName)
                 lineTemp    = ""
 
@@ -426,8 +436,8 @@ def makeRPYFiles( fileTRans):
                 lineCount = lineCount + 1
                 result = re.search( reTrans[0], line)
 
-                if result and len( result.group(1)) >= 1 and skip == 0:                            # если нашли строку с парой кавычек и это не переведенная строка ( не скип)
-
+                if result  and skip == 0:                            # если нашли строку с парой кавычек и это не переведенная строка ( не скип)
+                #and len( result.group(1)) >= 1
                     skip  = 1
                     oLine = result.group(1)
                     tLine = linesTemp[lineFoundCount]
@@ -442,9 +452,9 @@ def makeRPYFiles( fileTRans):
                     fileAllText[lineCount + 1] = rLine                                             # записываем ее в массив как следующую строку
                     lineFoundCount = lineFoundCount + 1
 
-                elif result and len( result.group(1)) < 1:
-                    lineFoundCount = lineFoundCount + 1
-                    skip = 0
+                # elif result and len( result.group(1)) < 1:
+                #     lineFoundCount = lineFoundCount + 1
+                #     skip = 0
 
                 else:
                     skip = 0
