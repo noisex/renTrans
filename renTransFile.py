@@ -2,10 +2,14 @@ import os
 import re
 import time
 import threading
-import tkinter as tk
-# import tkinter.ttk as ttk
 
-# from deep_translator import MyMemoryTranslator
+import tkinter as tk
+import tkinter.ttk as ttk
+
+from datetime import datetime
+from tkinter import messagebox as mb
+# from tkinter.ttk import Progressbar, Style, Button
+
 from deep_translator import GoogleTranslator
 
 ###############################################################################################################################
@@ -14,11 +18,17 @@ fileTRans   = []
 fileStat    = {}
 threadSTOP  = False
 allStart    = False
-TRLEN       = 4700 # 4700 for GoogleTranslate
-# TRWAIT      = 0
+TRLEN       = 4500 # 4700 for GoogleTranslate
+
+testRun     = False
+testWait    = 0.3
+
+oprint = print
 
 reFind      = '(\\[.+?\\])'
-reTrans     = re.compile(r'"(.*)"( nointeract)?$'), 0, 0
+# reTrans     = re.compile(r'"(.*[\w].*)"(  )?$'), 0, 0
+reTrans     = re.compile(r'"(.*[\w].*)"'), 0, 0
+
 # reTrans     = re.compile(r'"(.*\w+.*)"( nointeract)?$'), 0, 0
 reBrackets  = [
     '(\\[.+?\\])',          # квадратные скобки  - []
@@ -83,7 +93,10 @@ class CreateToolTip(object):
             tw.destroy()
 #############################################################################################
 
-def print( line):
+def print( line, newLine=False):
+    if newLine:
+        textLogs.insert( tk.END, '[{}]\n'.format( time.strftime('%H:%M:%S')))
+
     textLogs.insert( tk.END, '[{}] {}\n'.format( time.strftime('%H:%M:%S'), str( line)))
     textLogs.see( tk.END)
 
@@ -127,12 +140,12 @@ def rescanFolders():
 def listFileUpdate( fileStat):
     i = 0
     listFile.delete(0, tk.END)
-    listFile.insert( tk.END,  "{:^33}|{:^10}|{:^7}".format( 'File', 'Size', 'Lines'))
+    listFile.insert( tk.END,  "{:^34}|{:^10}|{:^7}".format( 'File', 'Size', 'Lines'))
 
-    for fileName in fileStat:
+    for fileName in fileStat['files']:
         i += 1
-        fs = fileStat[fileName]
-        listFile.insert( tk.END,  "{:2}|{:<30}|{:>10,}|{:>7}".format( i, fs['name'], fs['tempFSize'], fs['tempFLine']))
+        fs = fileStat['files'][fileName]
+        listFile.insert( tk.END,  "{:3}|{:<30.30}|{:>10,}|{:>7}".format( i, fs['name'], fs['tempFSize'], fs['tempFLine']))
 
 
 def listTransFiles():
@@ -147,7 +160,9 @@ def listTransFiles():
 
 
 def listFileStats( fileList):
-    fileStat = {}
+    fileStat            = {}
+    fileStat['files']   = {}
+    fileStat['setting'] = {}
     i        = 0
 
     for filePath in fileList:                           # Находим файлы для перевода в дирректории
@@ -172,20 +187,23 @@ def listFileStats( fileList):
                 # wordslist = line.split()
                 # words += len(wordslist)
                 # characters += sum(len(word) for word in wordslist)
-        if fileName not in fileStat: fileStat[fileName] = {}
+        if fileName not in fileStat: fileStat['files'][fileName] = {}
 
-        fileStat[fileName]['name'] = fileName
-        fileStat[fileName]['size'] = fileSize
-        fileStat[fileName]["path"] = filePath
-        fileStat[fileName]['path'] = filePath
-        fileStat[fileName]['lines'] = lines
-        fileStat[fileName]["chars"] = linesLen
-        fileStat[fileName]['tempFLine'] = 0
-        fileStat[fileName]['tempFSize'] = 0
-        fileStat[fileName]['filesMax'] = filesMax
-        fileStat[fileName]['filesCur'] = i
+        fs = fileStat['files'][fileName]
+
+        fs['name'] = fileName
+        fs['size'] = fileSize
+        fs["path"] = filePath
+        fs['path'] = filePath
+        fs['lines'] = lines
+        fs["chars"] = linesLen
+        fs['tempFLine'] = 0
+        fs['tempFSize'] = 0
+        fs['filesMax'] = filesMax
+        fs['filesCur'] = i
 
     listFileUpdate( fileStat)
+    # print( fileStat)
     return fileStat
 
 # TODO процент с цыфрой без экрана
@@ -210,13 +228,10 @@ def findCorrect( fix):                                                 # кор�
     fix = fix.replace( 'Какой!', 'Что!')
     fix = fix.replace( 'Какой.', 'Что.')
 
-    fix = fix.replace( 'Прохладный!', 'Здорово!')
+    fix = fix.replace( 'Прохладный', 'Здорово')
 
-
-    x = fix.find( 'Какие')
-    if x >= 0:
+    if fix.find( 'Какие') >= 0:
         print( str( fix))
-        pass
 
     return fix
 
@@ -245,17 +260,18 @@ def findTempBrackets( fileTRans):
     textLine02 = text02.split('\n')
 
     i = 0
+    print( '\n')
     for line in textLine01:
         if line != textLine02[i]:
             dictTemp[line] = textLine02[i]
             print( line + ' -=> ' + textLine02[i])
         i += 1
 
-    for tempFile in fileTRans:
+    for tempFile in fileStat['files']:
         fileNameTemp  = 'temp\\{}.tmp'.format( str( tempFile))
 
         # Read in the file
-        with open( fileNameTemp, 'r', encoding='utf-8') as file :
+        with open( fileNameTemp, 'r') as file :
             filedata = file.read()
 
         # Replace the target string
@@ -268,7 +284,7 @@ def findTempBrackets( fileTRans):
         with open( fileNameTemp, 'w', encoding='utf-8') as file:
             file.write(filedata)
 
-    print(dictTemp)
+    # print(dictTemp, True)
 
 
 def findZamena( oLine, dictZamena):
@@ -283,21 +299,52 @@ def findZamena( oLine, dictZamena):
 def tryToTranslate( oLine, lineSize, file):
 
     fileName     = 'temp\\{}.transl'.format( str( file))
-    fileTempSize = fileStat[file]['tempFLine']
-    filesMax     = fileStat[file]['filesMax']
-    filesCur     = fileStat[file]['filesCur']
+    fileTempSize = fileStat['files'][file]['tempFLine']
+    filesMax     = fileStat['files'][file]['filesMax']
+    filesCur     = fileStat['files'][file]['filesCur']
 
+    totalLine    = fileStat['setting']['totalLine']
+    totalSize    = fileStat['setting']['totalSize']
+    currentLine  = fileStat['setting']['currentLine']
+    currentSize  = fileStat['setting']['currentSize']
+
+    timeSTART    = fileStat['setting']['timeSTART']
+    timeNOW      = datetime.today().timestamp()
+
+    timeDelta    = timeNOW - timeSTART
+    timeFinish   = ( totalLine * timeDelta) / currentLine
+    timeEND      = timeSTART + timeFinish
+    timeLaps     = timeFinish - timeDelta
+
+    lbStart["text"] = datetime.fromtimestamp( timeEND).strftime( "%H:%M:%S")
+    lbEnd["text"]   = datetime.utcfromtimestamp( timeLaps).strftime("%Hч %Mм %Sсек")
+
+    lbLine['text']  = '{:,} из {:,}'.format( currentLine, totalLine)
+    lbLines['text'] = '{:,} из {:,}'.format( currentSize, totalSize)
+    # lblTimeStart["text"]= datetime.fromtimestamp( timeSTART).strftime( "%d.%m.%y %H:%M:%S")
+    percent         = str( round((( currentLine / totalLine) * 100), 2))
+    pbTotal['value']= percent
+    stPBar.configure("lbPBar", text= percent + "%      ")
     # time.sleep( TRWAIT)
 
     # tLine       = MyMemoryTranslator( source='en', target='ru').translate( oLine)
-    tLine        = GoogleTranslator( source='en', target='ru').translate( oLine)
+    if testRun:
+        tLine = oLine
+        time.sleep( testWait)
+    else:
+        try:
+            tLine        = GoogleTranslator( source='en', target='ru').translate( oLine)
+        except:
+            print( len(oLine))
+            print( oLine)
+            tLine = oLine
 
     if fileTempSize != 0:
         fileReadProc = ( lineSize / fileTempSize) * 100
     else:
         fileReadProc = 0
 
-    print( '-=> {:5}% {:2}/{} [{}]'.format( round( fileReadProc, 1), filesCur, filesMax, file))
+    print( '-=> {:5}% {:2}/{} [{:.35}]'.format( round( fileReadProc, 1), filesCur, filesMax, file))
 
     if tLine:
         f = open( fileName,'a', encoding='utf-8')
@@ -309,9 +356,11 @@ def makeTempFiles( fileTRans):
 
     clearFolder( 'tmp')
     clearFolder( 'transl')
-    print( "start creating temp files...")
+    print( "start creating temp files...", True)
 
     dictZamena = {}
+    totalSize  = 0
+    totalLine  = 0
     textTag['state'] = tk.NORMAL
     textTag.delete( '1.0', tk.END)
     textEng.delete( '1.0', tk.END)
@@ -320,7 +369,8 @@ def makeTempFiles( fileTRans):
 
         allFile = []
         with open( file, encoding='utf-8') as f:
-            skip    = 0
+            # skip    = 0
+            skip01  = 0
             fileSize= 0
             lines   = 0
             allFile = f.read()
@@ -331,30 +381,36 @@ def makeTempFiles( fileTRans):
             tmpFileName   = 'temp\\{}.tmp'.format( str( fileName))
             transFileName = 'temp\\{}.transl'.format( str( fileName))
             tmpFile       = open( tmpFileName, 'w', encoding='utf-8')
-            # print( 'create tempFile [' + fileName + '] done')
 
             for line in fileText:
 
-                result = re.search( reTrans[0], line)
+                if line.find( r' "') >= 1 and skip01 == 0:
+                    skip01 = 1
 
-                if result and skip == 0:                            # если нашли строку с парой кавычек и это не переведенная строка ( не скип)
-                #and len( result.group(1)) >= 1
-                    skip     = 1
-                    lines    += 1
-                    oLine    = result.group(1)
-                    fileSize = fileSize + len( oLine)
+                    result = re.search( reTrans[0], line)
+                    if result:                            # если нашли строку с парой кавычек и это не переведенная строка ( не скип)
+                        lines    += 1
+                        oLine    = result.group(1)
+                        fileSize = fileSize + len( oLine)
 
-                    tmpFile.write( str( oLine) + '\n')
+                        tmpFile.write( str( oLine) + '\n')
 
-                    findZamena( oLine, dictZamena)
+                        findZamena( oLine, dictZamena)
                 else:
-                    skip = 0
+                    skip01 = 0
 
-            fileStat[fileName]['tempFSize'] = fileSize
-            fileStat[fileName]['tempFLine'] = lines
+            fileStat['files'][fileName]['tempFSize'] = fileSize
+            fileStat['files'][fileName]['tempFLine'] = lines
             tmpFile.close()
 
+            totalLine = totalLine + lines + 1
+            totalSize = totalSize + fileSize
+
+        fileStat['setting']['totalSize'] = totalSize
+        fileStat['setting']['totalLine'] = totalLine
         sorted_income = {k: dictZamena[k] for k in sorted(dictZamena)}
+
+        # oprint( fileName, totalLine, lines)
 
     for zamane in sorted_income:
         textTag.insert( tk.END, zamane + '\n')
@@ -365,12 +421,48 @@ def makeTempFiles( fileTRans):
     textTag['state'] = tk.DISABLED
     listFileUpdate(fileStat)
     print( "temp files done!\n")
+    # print( fileStat)
+
+
+def fileStatsUpdate( fileTRans):
+
+    totalLine = 0
+    totalSize = 0
+
+    for fileName in fileStat['files']:
+
+        fileNameTemp  = 'temp\\{}.tmp'.format( str( fileName))
+
+        with open( fileNameTemp, 'r', encoding='utf-8') as file :
+            allFile = file.read()
+            current_file_text = allFile.split('\n')
+            lines = 0
+            linesLen = 0
+
+            for line in current_file_text:
+                lines += 1
+                linesLen += len( line)
+
+            totalLine = totalLine + lines
+            totalSize = totalSize + linesLen
+
+            fileStat['files'][fileName]['tempFSize'] = linesLen
+            fileStat['files'][fileName]['tempFLine'] = lines - 1
+
+    fileStat['setting']['totalLine'] = totalLine
+    fileStat['setting']['totalSize'] = totalSize
 
 
 def makeTransFiles( fileTRans):
     global allStart
     clearFolder( 'transl')
-    print( '\nstart translating...')
+    print( 'start translating...\n', True)
+    currentSize = 0
+    currentLine = 0
+    fileStat['setting']['timeSTART'] = datetime.today().timestamp()
+
+    if 'totalLine' not in fileStat['setting']:
+        fileStatsUpdate( fileTRans)
 
     for file in fileTRans:
 
@@ -391,14 +483,18 @@ def makeTransFiles( fileTRans):
                     return
 
                 lineCount    += 1
+                currentLine  += 1
                 lineTemp     = lineTemp + line + '\n'
                 lineSize     = len( lineTemp)
+                currentSize  = currentSize + len( line)
+                fileStat['setting']['currentLine'] = currentLine
+                fileStat['setting']['currentSize'] = currentSize
 
                 if lineSize >= TRLEN:
                     tryToTranslate( lineTemp, lineCount, fileName)
                     lineTemp    = ""
 
-            if len( lineTemp) >= 1:
+            if len( lineTemp) > 1:
                 tryToTranslate( lineTemp, lineCount, fileName)
                 lineTemp    = ""
 
@@ -408,56 +504,62 @@ def makeTransFiles( fileTRans):
     if allStart:
         allStart = False
         makeRPYFiles( fileTRans)
-
+    else:
+        mb.showinfo( "trans", 'make TRANS files done!')
 
 def makeRPYFiles( fileTRans):
 
-    print( 'start compile renpy files...')
+    print( 'start compile renpy files...', True)
+    clearFolder( 'rpy', 'transl')
+
     for file in fileTRans:
 
-        lineCount       = -1
         lineFoundCount  = 0
         fileName        = os.path.basename( file)
         fileNameTrans   = 'temp\\{}.transl'.format( str( fileName))
         fileNameDone    = 'transl\\{}'.format(str(fileName))
         allFile         = []
 
-        fileTemp        = open( fileNameTrans, encoding='utf-8').read()
-        linesTemp       = fileTemp.split('\n') # readlines()
+        try:
+            fileTemp        = open( fileNameTrans, encoding='utf-8').read()
+        except:
+            print( f'trans file ( {fileNameTrans}) not found!. make translate first.')
+            mb.showerror( 'error', f'trans file ( {fileNameTrans}) not found! make translate first.')
+            return
+
+        linesTemp = fileTemp.split('\n') # readlines()
 
         with open( file, encoding='utf-8') as f:
-            skip    = 0
+            skip01  = 0
             allFile = f.read()
 
             fileAllText = allFile.split('\n')
 
-            for line in fileAllText:
+            for lineCount, line in enumerate( fileAllText):
 
-                lineCount = lineCount + 1
-                result = re.search( reTrans[0], line)
+                if line.find( r' "') >= 1 and skip01 == 0:
+                    skip01 = 1
 
-                if result  and skip == 0:                            # если нашли строку с парой кавычек и это не переведенная строка ( не скип)
-                #and len( result.group(1)) >= 1
-                    skip  = 1
-                    oLine = result.group(1)
-                    tLine = linesTemp[lineFoundCount]
+                    result = re.search( reTrans[0], line)
 
-                    tLine = findCorrect( tLine)
-                    tLine = findSkobki( tLine, oLine)                                       # заменяем теги
+                    if result:
+                        oLine = result.group(1)
+                        tLine = linesTemp[lineFoundCount]
 
-                    rLine = str( line.replace( str( oLine), tLine))                           # формируем результирующую строку ( не помню почему так, а не собрать нормальную, видимо потому, что бывают еще старые переводы с другим форматом)
+                        tLine = findCorrect( tLine)
+                        tLine = findSkobki( tLine, oLine)                                       # заменяем теги
+
+                        rLine = str( line.replace( str( oLine), tLine))                           # формируем результирующую строку ( не помню почему так, а не собрать нормальную, видимо потому, что бывают еще старые переводы с другим форматом)
+                        lineFoundCount = lineFoundCount + 1
+                    else:
+                        rLine = line
+
                     rLine = str( rLine.replace("    # ", "    "))
                     rLine = str( rLine.replace("    old ", "    new "))
 
                     fileAllText[lineCount + 1] = rLine                                             # записываем ее в массив как следующую строку
-                    lineFoundCount = lineFoundCount + 1
-
-                # elif result and len( result.group(1)) < 1:
-                #     lineFoundCount = lineFoundCount + 1
-                #     skip = 0
-
                 else:
-                    skip = 0
+                    skip01 = 0
 
             new_rpy_tr = open( fileNameDone, 'w', encoding='utf-8')
 
@@ -467,8 +569,11 @@ def makeRPYFiles( fileTRans):
             # print( "make file [" + fileName + '] done')
             new_rpy_tr.close()
 
-    print( 'compile renpy files done!!!\n')
+    print( 'compile renpy files done!!!\n', True)
     print( 'можно копировать все это ( папка /transl/) обратно в игру ( папка /game/tl/rus/)')
+
+    if allStart:
+        mb.showinfo( 'all done', 'make RPY files done')
 
 
 def makeALLFiles():
@@ -498,7 +603,7 @@ def treatTranslate( fileTRans):
 #######################################################################################################
 
 root= tk.Tk()
-root.minsize( 750, 300)
+root.minsize( 1100, 300)
 root.geometry("1100x450")
 
 root.columnconfigure(0, weight=0, minsize=50)
@@ -509,10 +614,7 @@ root.rowconfigure(   1, weight=0, pad=5)
 
 #######################################################################################################
 listFile        = tk.Listbox( root, selectmode=tk.NORMAL, height=4, width=53, font=("Consolas", 8))
-textLogs        = tk.Text( root, height=4, width=53, font=("Consolas", 8))
-
 listFile.grid( row=0, column=0, sticky="NWES", padx=5, pady=5)
-textLogs.grid( row=0, column=2, sticky="NWES", padx=5, pady=5)
 
 group0          = tk.LabelFrame(root, padx=5, pady=10, text="        [game_tag]        -=>      'eng text'   ")
 group0.grid( row=0, column=1, padx=5, pady=0, sticky='NWES')
@@ -525,6 +627,40 @@ textEng         = tk.Text( group0, font=("Consolas", 8), width=25)
 
 textTag.grid( row=0, column=0, sticky='NWES', padx=5)
 textEng.grid( row=0, column=1, sticky='NWES', padx=5)
+
+#######################################################################################################
+group2          = tk.LabelFrame(root, padx=3, pady=3, text="Common")
+group2.grid(row=0, column=2, padx=0, pady=0, sticky='NWES')
+group2.columnconfigure(0, weight=0, minsize=5)
+group2.columnconfigure(1, weight=1, minsize=25)
+group2.columnconfigure(2, weight=0, minsize=5)
+group2.columnconfigure(3, weight=1, minsize=5)
+group2.rowconfigure(   3, weight=2, pad=0)
+
+tk.Label(group2, text="Закончим:").grid(row=0, sticky=tk.E)
+tk.Label(group2, text="Через:"   ).grid(row=1, sticky=tk.E)
+tk.Label(group2, text="Строка:"  ).grid(row=0, sticky=tk.E, column=2)
+tk.Label(group2, text="Размер:"  ).grid(row=1, sticky=tk.E, column=2)
+
+stPBar          = ttk.Style( group2)
+stPBar.layout(   "lbPBar", [('lbPBar.trough', {'children': [('lbPBar.pbar', {'side': 'left', 'sticky': 'ns'}), ("lbPBar.label",   {"sticky": ""})], 'sticky': 'nswe'})])
+stPBar.configure("lbPBar", text="0 %      ")
+
+pbTotal         = ttk.Progressbar( group2, mode="determinate", length = 200, style='lbPBar')
+textLogs        = tk.Text( group2, height=4, width=53, font=("Consolas", 8))
+
+lbStart         = tk.Label(group2, text="")
+lbEnd           = tk.Label(group2, text="")
+lbLine          = tk.Label(group2, text="")
+lbLines         = tk.Label(group2, text="")
+
+lbStart.grid(   row=0, sticky=tk.W, column=1)
+lbEnd.grid(     row=1, sticky=tk.W, column=1)
+lbLine.grid(    row=0, sticky=tk.W, column=3)
+lbLines.grid(   row=1, sticky=tk.W, column=3)
+
+pbTotal.grid(   row=2, column=0, columnspan=4, sticky="NSEW")
+textLogs.grid(  row=3, column=0, columnspan=4, sticky="NWES", padx=5, pady=5)
 
 #######################################################################################################
 group1          = tk.LabelFrame(root, padx=3, pady=3, text="")
@@ -628,3 +764,63 @@ root.mainloop()
 # time.sleep(5)
 # t.do_run = False #Signal to stop thread
 # t.join()
+
+# from tkinter import Tk
+# from tkinter.ttk import Progressbar, Style, Button
+# from time import sleep
+
+
+# root = Tk()
+# s = Style(root)
+# # add the label to the progressbar style
+# s.layout("LabeledProgressbar",
+#          [('LabeledProgressbar.trough',
+#            {'children': [('LabeledProgressbar.pbar',
+#                           {'side': 'left', 'sticky': 'ns'}),
+#                          ("LabeledProgressbar.label",   # label inside the bar
+#                           {"sticky": ""})],
+#            'sticky': 'nswe'})])
+
+# p = Progressbar(root, orient="horizontal", length=300, style="LabeledProgressbar")
+# p.pack()
+
+# # change the text of the progressbar,
+# # the trailing spaces are here to properly center the text
+# s.configure("LabeledProgressbar", text="0 %      ")
+
+# def fct():
+#     for i in range(1, 101):
+#         sleep(0.1)
+#         p.step()
+#         s.configure("LabeledProgressbar", text="{0} %      ".format(i))
+#         root.update()
+
+# Button(root, command=fct, text="launch").pack()
+
+# root.mainloop()
+
+                # lineCount = lineCount + 1
+                # result = re.search( reTrans[0], line)
+
+                # if result  and skip == 0:                            # если нашли строку с парой кавычек и это не переведенная строка ( не скип)
+                # #and len( result.group(1)) >= 1
+                #     skip  = 1
+                #     oLine = result.group(1)
+                #     tLine = linesTemp[lineFoundCount]
+
+                #     tLine = findCorrect( tLine)
+                #     tLine = findSkobki( tLine, oLine)                                       # заменяем теги
+
+                #     rLine = str( line.replace( str( oLine), tLine))                           # формируем результирующую строку ( не помню почему так, а не собрать нормальную, видимо потому, что бывают еще старые переводы с другим форматом)
+                #     rLine = str( rLine.replace("    # ", "    "))
+                #     rLine = str( rLine.replace("    old ", "    new "))
+
+                #     fileAllText[lineCount + 1] = rLine                                             # записываем ее в массив как следующую строку
+                #     lineFoundCount = lineFoundCount + 1
+
+                # elif result and len( result.group(1)) < 1:
+                #     lineFoundCount = lineFoundCount + 1
+                #     skip = 0
+
+                # else:
+                #     skip = 0
