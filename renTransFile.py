@@ -26,8 +26,17 @@ testWait    = 0.3
 oprint = print
 
 reFind      = '(\\[.+?\\])'
+reProc      = '(\\%\\(.+?\\)s)'
 # reTrans     = re.compile(r'"(.*[\w].*)"(  )?$'), 0, 0
 reTrans     = re.compile(r'"(.*[\w].*)"'), 0, 0
+
+# src_str  = re.compile("this", re.IGNORECASE)
+# str_replaced  = src_str.sub("that", "This is a test sentence. this is a test sentence. THIS is a test sentence.")
+# print(re.escape('https://www.python.org'))
+# https://www\.python\.org
+
+# redata = re.compile(re.escape('php'), re.IGNORECASE)
+# new_text = redata.sub('php', 'PHP Exercises')
 
 # reTrans     = re.compile(r'"(.*\w+.*)"( nointeract)?$'), 0, 0
 reBrackets  = [
@@ -37,6 +46,7 @@ reBrackets  = [
 ]
 
 fileSkip    = [ 'gui.rpy', "common.rpy", "options.rpy", "screens.rpy", 'xxx_transparent.rpy', 'xxx_toggle_menu.rpy' ]
+# fileSkip    = []
 
 #################################################################################################################
 class CreateToolTip(object):
@@ -99,6 +109,7 @@ def print( line, newLine=False):
 
     textLogs.insert( tk.END, '[{}] {}\n'.format( time.strftime('%H:%M:%S'), str( line)))
     textLogs.see( tk.END)
+
 
 def update():
     root.update()
@@ -208,11 +219,14 @@ def listFileStats( fileList):
 
 # TODO процент с цыфрой без экрана
 def findCorrect( fix):                                                 # корректировка всяких косяков первода, надо перписать...
+    # %(РС - %(p_name)s
+
 
     fix = fix.replace(' ...', '...')
-    fix = fix.replace( '\\ "', '\\"')
 
+    fix = fix.replace( '\\ "', '\\"')
     fix = fix.replace( '"', '`')
+
     fix = fix.replace( '\\ n', '\\n')
     fix = fix.replace( '\\ N', '\\n')
 
@@ -259,8 +273,11 @@ def findTempBrackets( fileTRans):
     textLine01 = text01.split('\n')
     textLine02 = text02.split('\n')
 
+    if len( text02) <= 1:
+        print( 'nothing to change, skiped...', True)
+        return
+
     i = 0
-    print( '\n')
     for line in textLine01:
         if line != textLine02[i]:
             dictTemp[line] = textLine02[i]
@@ -271,14 +288,14 @@ def findTempBrackets( fileTRans):
         fileNameTemp  = 'temp\\{}.tmp'.format( str( tempFile))
 
         # Read in the file
-        with open( fileNameTemp, 'r') as file :
+        with open( fileNameTemp, 'r', encoding='utf-8') as file :
             filedata = file.read()
 
         # Replace the target string
         for tempLine in dictTemp:
 
             if tempLine != dictTemp[tempLine]:
-                # print( tempLine, dictTemp[tempLine])
+                # oprint( tempLine, dictTemp[tempLine])
                 filedata = filedata.replace( tempLine, dictTemp[tempLine])
 
         with open( fileNameTemp, 'w', encoding='utf-8') as file:
@@ -287,13 +304,18 @@ def findTempBrackets( fileTRans):
     # print(dictTemp, True)
 
 
-def findZamena( oLine, dictZamena):
+def findZamena( oLine, dictZamena, dictZamenaPR):
 
     oResultSC = re.findall( reFind, oLine)
+    oResultPR = re.findall( reProc, oLine)
 
     if oResultSC:
         for i in range( len( oResultSC)):
             dictZamena[oResultSC[i]] = oResultSC[i]              # выписываем в словарь тэги в квадратных скобках
+
+    if oResultPR:
+        for i in range( len( oResultPR)):
+            dictZamenaPR[oResultPR[i]] = oResultPR[i]              # выписываем в словарь тэги в квадратных скобках
 
 
 def tryToTranslate( oLine, lineSize, file):
@@ -321,11 +343,11 @@ def tryToTranslate( oLine, lineSize, file):
 
     lbLine['text']  = '{:,} из {:,}'.format( currentLine, totalLine)
     lbLines['text'] = '{:,} из {:,}'.format( currentSize, totalSize)
-    # lblTimeStart["text"]= datetime.fromtimestamp( timeSTART).strftime( "%d.%m.%y %H:%M:%S")
     percent         = str( round((( currentLine / totalLine) * 100), 2))
     pbTotal['value']= percent
+    root.title( percent + '%')
+
     stPBar.configure("lbPBar", text= percent + "%      ")
-    # time.sleep( TRWAIT)
 
     # tLine       = MyMemoryTranslator( source='en', target='ru').translate( oLine)
     if testRun:
@@ -333,7 +355,7 @@ def tryToTranslate( oLine, lineSize, file):
         time.sleep( testWait)
     else:
         try:
-            tLine        = GoogleTranslator( source='en', target='ru').translate( oLine)
+            tLine = GoogleTranslator( source='en', target='ru').translate( oLine)
         except:
             print( len(oLine))
             print( oLine)
@@ -359,6 +381,7 @@ def makeTempFiles( fileTRans):
     print( "start creating temp files...", True)
 
     dictZamena = {}
+    dictZamenaPR = {}
     totalSize  = 0
     totalLine  = 0
     textTag['state'] = tk.NORMAL
@@ -395,7 +418,7 @@ def makeTempFiles( fileTRans):
 
                         tmpFile.write( str( oLine) + '\n')
 
-                        findZamena( oLine, dictZamena)
+                        findZamena( oLine, dictZamena, dictZamenaPR)
                 else:
                     skip01 = 0
 
@@ -414,9 +437,13 @@ def makeTempFiles( fileTRans):
 
     for zamane in sorted_income:
         textTag.insert( tk.END, zamane + '\n')
-        textEng.insert( tk.END, zamane + '\n')
+        # textEng.insert( tk.END, zamane + '\n')
         # textTag.see(tk.END)
         # textEng.see(tk.END)
+
+    for zamane in dictZamenaPR:
+        textTag.insert( tk.END, zamane + '\n')
+        # textEng.insert( tk.END, zamane + '\n')
 
     textTag['state'] = tk.DISABLED
     listFileUpdate(fileStat)
@@ -496,16 +523,17 @@ def makeTransFiles( fileTRans):
 
             if len( lineTemp) > 1:
                 tryToTranslate( lineTemp, lineCount, fileName)
-                lineTemp    = ""
+                # lineTemp    = ""
 
     threadSTOP.do_run = False
     btnTranslate['text']    = '3 translate start'
-    print( 'translating done!\n')
+    print( 'translating done!')
     if allStart:
-        allStart = False
+        # allStart = False
         makeRPYFiles( fileTRans)
     else:
         mb.showinfo( "trans", 'make TRANS files done!')
+
 
 def makeRPYFiles( fileTRans):
 
@@ -521,56 +549,55 @@ def makeRPYFiles( fileTRans):
         allFile         = []
 
         try:
-            fileTemp        = open( fileNameTrans, encoding='utf-8').read()
-        except:
-            print( f'trans file ( {fileNameTrans}) not found!. make translate first.')
-            mb.showerror( 'error', f'trans file ( {fileNameTrans}) not found! make translate first.')
-            return
+            fileTemp    = open( fileNameTrans, encoding='utf-8').read()
+            linesTemp   = fileTemp.split('\n') # readlines()
 
-        linesTemp = fileTemp.split('\n') # readlines()
+            with open( file, encoding='utf-8') as f:
+                skip01  = 0
+                allFile = f.read()
+                fileAllText = allFile.split('\n')
 
-        with open( file, encoding='utf-8') as f:
-            skip01  = 0
-            allFile = f.read()
+                for lineCount, line in enumerate( fileAllText):
 
-            fileAllText = allFile.split('\n')
+                    if line.find( r' "') >= 1 and skip01 == 0:
+                        skip01 = 1
 
-            for lineCount, line in enumerate( fileAllText):
+                        result = re.search( reTrans[0], line)
 
-                if line.find( r' "') >= 1 and skip01 == 0:
-                    skip01 = 1
+                        if result:
+                            oLine = result.group(1)
+                            tLine = linesTemp[lineFoundCount]
 
-                    result = re.search( reTrans[0], line)
+                            tLine = findCorrect( tLine)
+                            tLine = findSkobki( tLine, oLine)                                       # заменяем теги
 
-                    if result:
-                        oLine = result.group(1)
-                        tLine = linesTemp[lineFoundCount]
+                            rLine = str( line.replace( str( oLine), tLine))                           # формируем результирующую строку ( не помню почему так, а не собрать нормальную, видимо потому, что бывают еще старые переводы с другим форматом)
+                            lineFoundCount = lineFoundCount + 1
+                        else:
+                            rLine = line
 
-                        tLine = findCorrect( tLine)
-                        tLine = findSkobki( tLine, oLine)                                       # заменяем теги
+                        rLine = str( rLine.replace("    # ", "    "))
+                        rLine = str( rLine.replace("    old ", "    new "))
 
-                        rLine = str( line.replace( str( oLine), tLine))                           # формируем результирующую строку ( не помню почему так, а не собрать нормальную, видимо потому, что бывают еще старые переводы с другим форматом)
-                        lineFoundCount = lineFoundCount + 1
+                        fileAllText[lineCount + 1] = rLine                                             # записываем ее в массив как следующую строку
                     else:
-                        rLine = line
+                        skip01 = 0
 
-                    rLine = str( rLine.replace("    # ", "    "))
-                    rLine = str( rLine.replace("    old ", "    new "))
+                new_rpy_tr = open( fileNameDone, 'w', encoding='utf-8')
 
-                    fileAllText[lineCount + 1] = rLine                                             # записываем ее в массив как следующую строку
-                else:
-                    skip01 = 0
+                for i in fileAllText:
+                    new_rpy_tr.write(str(i) + '\n')
 
-            new_rpy_tr = open( fileNameDone, 'w', encoding='utf-8')
+                # print( "make file [" + fileName + '] done')
+                new_rpy_tr.close()
 
-            for i in fileAllText:
-                new_rpy_tr.write(str(i) + '\n')
+        except:
+            print( f'file ({fileNameTrans}) not found! make translate first.')
+            # mb.showerror( 'error', f'trans file ( {fileNameTrans}) not found! make translate first.')
+            # break
 
-            # print( "make file [" + fileName + '] done')
-            new_rpy_tr.close()
-
-    print( 'compile renpy files done!!!\n', True)
-    print( 'можно копировать все это ( папка /transl/) обратно в игру ( папка /game/tl/rus/)')
+    print( 'compile renpy files done!!!')
+    print( 'можно копировать все это ( папка /transl/) обратно в игру ( папка /game/tl/rus/)', True)
 
     if allStart:
         mb.showinfo( 'all done', 'make RPY files done')
@@ -600,6 +627,19 @@ def treatTranslate( fileTRans):
         threadSTOP.do_run = False
 
 
+def tagsCopy():
+    textEng.delete( '1.0', tk.END)
+
+    text01     = textTag.get(1.0, tk.END)
+    textLine01 = text01.split('\n')
+
+    for line in textLine01:
+        textEng.insert( tk.END, line + '\n')
+
+
+def tagsClear():
+    textEng.delete( '1.0', tk.END)
+
 #######################################################################################################
 
 root= tk.Tk()
@@ -625,8 +665,14 @@ group0.rowconfigure(   0, weight=2, pad=0)
 textTag         = tk.Text( group0, font=("Consolas", 8), width=25)#, state=tk.DISABLED)
 textEng         = tk.Text( group0, font=("Consolas", 8), width=25)
 
+btnTagCopy      = ttk.Button( group0, text=">>>>",       width=20, command= tagsCopy)
+btnTagClear     = ttk.Button( group0, text="xxxx",       width=20, command= tagsClear)
+
 textTag.grid( row=0, column=0, sticky='NWES', padx=5)
 textEng.grid( row=0, column=1, sticky='NWES', padx=5)
+
+btnTagCopy.grid(  row=1, column=0, sticky='WES', padx=0)
+btnTagClear.grid( row=1, column=1, sticky='WES', padx=0)
 
 #######################################################################################################
 group2          = tk.LabelFrame(root, padx=3, pady=3, text="Common")
@@ -674,12 +720,12 @@ group1.columnconfigure(5, weight=1, minsize=15)
 group1.columnconfigure(6, weight=1, minsize=15)
 # group1.columnconfigure(7, weight=0, minsize=15)
 
-btnTLScan       = tk.Button( group1, text="0 rescan tl folder",   width=15, height=1, command= lambda: rescanFolders())
-btnMakeTemp     = tk.Button( group1, text="1 make temp files",    width=15, height=1, command= lambda: makeTempFiles( fileTRans))
-btnTempRepl     = tk.Button( group1, text="2 tags replace",       width=15, height=1, command= lambda: findTempBrackets( fileStat))
-btnTranslate    = tk.Button( group1, text="3 translate start",    width=15, height=1, command= lambda: treatTranslate( fileTRans))
-btnMakeRPY      = tk.Button( group1, text="4 make Renpy files",   width=15, height=1, command= lambda: makeRPYFiles( fileTRans))
-btnALL          = tk.Button( group1, text="just Translate",       width=15, height=1, command= makeALLFiles)
+btnTLScan       = ttk.Button( group1, text="0 rescan tl folder",   width=15, command= lambda: rescanFolders())
+btnMakeTemp     = ttk.Button( group1, text="1 make temp files",    width=15, command= lambda: makeTempFiles( fileTRans))
+btnTempRepl     = ttk.Button( group1, text="2 tags replace",       width=15, command= lambda: findTempBrackets( fileStat))
+btnTranslate    = ttk.Button( group1, text="3 translate start",    width=15, command= lambda: treatTranslate( fileTRans))
+btnMakeRPY      = ttk.Button( group1, text="4 make Renpy files",   width=15, command= lambda: makeRPYFiles( fileTRans))
+btnALL          = ttk.Button( group1, text="just Translate",       width=15, command= makeALLFiles)
 
 btnTLScan.grid(   row=0, column=0, sticky='NWES')
 btnMakeTemp.grid( row=0, column=1, sticky='NWES')
@@ -702,6 +748,9 @@ button3_ttp = CreateToolTip(btnTempRepl,    'Замена тэгов во вре
 button4_ttp = CreateToolTip(btnTranslate,   'Перевод временных файлов (temp) на русский язык (transl).')
 button5_ttp = CreateToolTip(btnMakeRPY,     'Сборка переведенных файлов (transl) в Ренпайские файлы (rpy) в папке transl.')
 button6_ttp = CreateToolTip(btnALL,         'Одна кнопка для всего. Нажимаем - получаем. Все просто и без затей.')
+
+# sizeGrip    = ttk.Sizegrip(group1)
+# sizeGrip.grid( row=0, column=6, sticky=tk.SE)
 
 rescanFolders()
 
