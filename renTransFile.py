@@ -11,7 +11,6 @@ from tkinter import messagebox as mb
 # from tkinter.ttk import Progressbar, Style, Button
 
 from deep_translator import GoogleTranslator
-
 ###############################################################################################################################
 
 fileTRans   = []
@@ -171,9 +170,7 @@ def listTransFiles():
 
 
 def listFileStats( fileList):
-    fileStat            = {}
-    fileStat['files']   = {}
-    fileStat['setting'] = {}
+    dicTemp  = {}
     i        = 0
 
     for filePath in fileList:                           # Находим файлы для перевода в дирректории
@@ -198,20 +195,25 @@ def listFileStats( fileList):
                 # wordslist = line.split()
                 # words += len(wordslist)
                 # characters += sum(len(word) for word in wordslist)
-        if fileName not in fileStat: fileStat['files'][fileName] = {}
+        if fileName not in dicTemp: dicTemp[fileName] = {}
 
-        fs = fileStat['files'][fileName]
+        fs = dicTemp[fileName]
 
         fs['name'] = fileName
         fs['size'] = fileSize
         fs["path"] = filePath
-        fs['path'] = filePath
         fs['lines'] = lines
         fs["chars"] = linesLen
         fs['tempFLine'] = 0
         fs['tempFSize'] = 0
         fs['filesMax'] = filesMax
         fs['filesCur'] = i
+
+    fileStat   = { 'files': {}, 'setting': {}}
+    listSorted = { key: dicTemp[key] for key in sorted( dicTemp)}
+
+    for key in listSorted:
+        fileStat['files'][key] = dicTemp[key]
 
     listFileUpdate( fileStat)
     # print( fileStat)
@@ -231,6 +233,7 @@ def findCorrect( fix):                                                 # кор�
     fix = fix.replace( '\\ N', '\\n')
 
     fix = fix.replace( '% (', ' %(')
+    fix = fix.replace( ') s', ')s')
     fix = fix.replace( '{я', '{i}')
     fix = fix.replace( '} ', '}')
 
@@ -447,7 +450,7 @@ def makeTempFiles( fileTRans):
 
     textTag['state'] = tk.DISABLED
     listFileUpdate(fileStat)
-    print( "temp files done!\n")
+    print( "temp files done!")
     # print( fileStat)
 
 
@@ -483,7 +486,7 @@ def fileStatsUpdate( fileTRans):
 def makeTransFiles( fileTRans):
     global allStart
     clearFolder( 'transl')
-    print( 'start translating...\n', True)
+    print( 'start translating...', True)
     currentSize = 0
     currentLine = 0
     fileStat['setting']['timeSTART'] = datetime.today().timestamp()
@@ -491,9 +494,8 @@ def makeTransFiles( fileTRans):
     if 'totalLine' not in fileStat['setting']:
         fileStatsUpdate( fileTRans)
 
-    for file in fileTRans:
+    for fileName in fileStat['files']:
 
-        fileName        = os.path.basename( file)
         fileNameTemp    = 'temp\\{}.tmp'.format( str( fileName))
         lineCount       = -1
 
@@ -665,8 +667,8 @@ group0.rowconfigure(   0, weight=2, pad=0)
 textTag         = tk.Text( group0, font=("Consolas", 8), width=25)#, state=tk.DISABLED)
 textEng         = tk.Text( group0, font=("Consolas", 8), width=25)
 
-btnTagCopy      = ttk.Button( group0, text=">>>>",       width=20, command= tagsCopy)
-btnTagClear     = ttk.Button( group0, text="xxxx",       width=20, command= tagsClear)
+btnTagCopy      = ttk.Button( group0, text=">>>>",       width=25, command= tagsCopy)
+btnTagClear     = ttk.Button( group0, text="xxxx",       width=25, command= tagsClear)
 
 textTag.grid( row=0, column=0, sticky='NWES', padx=5)
 textEng.grid( row=0, column=1, sticky='NWES', padx=5)
@@ -814,62 +816,3 @@ root.mainloop()
 # t.do_run = False #Signal to stop thread
 # t.join()
 
-# from tkinter import Tk
-# from tkinter.ttk import Progressbar, Style, Button
-# from time import sleep
-
-
-# root = Tk()
-# s = Style(root)
-# # add the label to the progressbar style
-# s.layout("LabeledProgressbar",
-#          [('LabeledProgressbar.trough',
-#            {'children': [('LabeledProgressbar.pbar',
-#                           {'side': 'left', 'sticky': 'ns'}),
-#                          ("LabeledProgressbar.label",   # label inside the bar
-#                           {"sticky": ""})],
-#            'sticky': 'nswe'})])
-
-# p = Progressbar(root, orient="horizontal", length=300, style="LabeledProgressbar")
-# p.pack()
-
-# # change the text of the progressbar,
-# # the trailing spaces are here to properly center the text
-# s.configure("LabeledProgressbar", text="0 %      ")
-
-# def fct():
-#     for i in range(1, 101):
-#         sleep(0.1)
-#         p.step()
-#         s.configure("LabeledProgressbar", text="{0} %      ".format(i))
-#         root.update()
-
-# Button(root, command=fct, text="launch").pack()
-
-# root.mainloop()
-
-                # lineCount = lineCount + 1
-                # result = re.search( reTrans[0], line)
-
-                # if result  and skip == 0:                            # если нашли строку с парой кавычек и это не переведенная строка ( не скип)
-                # #and len( result.group(1)) >= 1
-                #     skip  = 1
-                #     oLine = result.group(1)
-                #     tLine = linesTemp[lineFoundCount]
-
-                #     tLine = findCorrect( tLine)
-                #     tLine = findSkobki( tLine, oLine)                                       # заменяем теги
-
-                #     rLine = str( line.replace( str( oLine), tLine))                           # формируем результирующую строку ( не помню почему так, а не собрать нормальную, видимо потому, что бывают еще старые переводы с другим форматом)
-                #     rLine = str( rLine.replace("    # ", "    "))
-                #     rLine = str( rLine.replace("    old ", "    new "))
-
-                #     fileAllText[lineCount + 1] = rLine                                             # записываем ее в массив как следующую строку
-                #     lineFoundCount = lineFoundCount + 1
-
-                # elif result and len( result.group(1)) < 1:
-                #     lineFoundCount = lineFoundCount + 1
-                #     skip = 0
-
-                # else:
-                #     skip = 0
