@@ -17,9 +17,10 @@ fileTRans   = []
 fileStat    = {}
 threadSTOP  = False
 allStart    = False
-TRLEN       = 4500 # 4700 for GoogleTranslate
+TRLEN       = 4700 # 4700 for GoogleTranslate
 
 testRun     = False
+engTRANS    = False
 testWait    = 0.3
 
 oprint = print
@@ -223,11 +224,17 @@ def listFileStats( fileList):
 def findCorrect( fix):                                                 # корректировка всяких косяков первода, надо перписать...
     # %(РС - %(p_name)s
 
+    fix = re.sub( r'(-)$', r'.', fix)                                           # -" => ."
+    fix = re.sub( '^да$', 'Да', fix)
+    fix = re.sub( r'(\s+)([\.\!\?])', r'\2', fix)                               # убираем парные+ пробелы и пробелы перед знаком препинания
 
-    fix = fix.replace(' ...', '...')
+    fix = re.sub( r'К[аА][кК][иИоО]\w{1}([-\.\!\?]{1})', r'Что\1', fix)         # Какие -> Что
+    fix = re.sub( r'Большой([\.\!\?]{1})', r'Отлично\1', fix)
+    fix = re.sub( r'Прохладный([\.\!\?]{1})', r'Здорово\1', fix)
 
-    fix = fix.replace( '\\ "', '\\"')
-    fix = fix.replace( '"', '`')
+    fix = re.sub( r'(\d+)\W*%', r'\1\%', fix)                                   # 123% => 123\%
+
+    fix = fix.replace( '"', '\'')
 
     fix = fix.replace( '\\ n', '\\n')
     fix = fix.replace( '\\ N', '\\n')
@@ -237,18 +244,8 @@ def findCorrect( fix):                                                 # кор�
     fix = fix.replace( '{я', '{i}')
     fix = fix.replace( '} ', '}')
 
-    fix = fix.replace( 'Какие?', 'Что?')
-    fix = fix.replace( 'Какие!', 'Что!')
-    fix = fix.replace( 'Какие.', 'Что.')
-
-    fix = fix.replace( 'Какой?', 'Что?')
-    fix = fix.replace( 'Какой!', 'Что!')
-    fix = fix.replace( 'Какой.', 'Что.')
-
-    fix = fix.replace( 'Прохладный', 'Здорово')
-
-    if fix.find( 'Какие') >= 0:
-        print( str( fix))
+    # if fix.find( 'Какие') >= 0:
+    #     print( str( fix))
 
     return fix
 
@@ -508,7 +505,7 @@ def makeTransFiles( fileTRans):
             for line in fileAllText:
 
                 if not getattr( threadSTOP, "do_run"):
-                    print( 'translate break.\n')
+                    print( 'translate break.', True)
                     return
 
                 lineCount    += 1
@@ -572,6 +569,9 @@ def makeRPYFiles( fileTRans):
 
                             tLine = findCorrect( tLine)
                             tLine = findSkobki( tLine, oLine)                                       # заменяем теги
+
+                            if engTRANS:                                                           # если хочется иметь копию оригинальной строки внизу переведенной в игре
+                                tLine = tLine + '\\n{i}{size=-10}{color=#999}' + oLine
 
                             rLine = str( line.replace( str( oLine), tLine))                           # формируем результирующую строку ( не помню почему так, а не собрать нормальную, видимо потому, что бывают еще старые переводы с другим форматом)
                             lineFoundCount = lineFoundCount + 1
