@@ -19,6 +19,12 @@ threadSTOP  = False
 allStart    = False
 TRLEN       = 4700 # 4700 for GoogleTranslate
 
+folderTL    = './tl'
+folderTEMP  = './temp'
+folderRPY   = './transl'
+extTEMP     = 'tmp'
+extTRANS    = 'transl'
+
 testRun     = False
 engTRANS    = False
 testWait    = 0.3
@@ -117,20 +123,20 @@ def update():
 
 
 def makeNewDirs():
-    if not os.path.exists( 'transl'):                                   # создаем дирректорию для файлов с переводом (если нужно)
-        os.mkdir('transl')
-        print( 'Папка transl - из нее забираем перевод')
+    if not os.path.exists( folderRPY):                                   # создаем дирректорию для файлов с переводом (если нужно)
+        os.mkdir( folderRPY)
+        print( f'Папка {folderRPY} - из нее забираем перевод')
 
-    if not os.path.exists( 'tl'):                                       # создаем дирректорию для файлов с переводом (если нужно)
-        os.mkdir('tl')
-        print( 'Папка tl - в нее кладем файлы для перевода')
+    if not os.path.exists( folderTL):                                       # создаем дирректорию для файлов с переводом (если нужно)
+        os.mkdir( folderTL)
+        print( f'Папка {folderTL} - в нее кладем файлы для перевода')
 
-    if not os.path.exists( 'temp'):                                       # создаем дирректорию для файлов с переводом (если нужно)
-        os.mkdir('temp')
-        print( 'Папка temp - она просто нужна...')
+    if not os.path.exists( folderTEMP):                                       # создаем дирректорию для файлов с переводом (если нужно)
+        os.mkdir( folderTEMP)
+        print( f'Папка {folderTEMP} - она просто нужна...')
 
 
-def clearFolder( fileExt='transl', dirName='temp'):
+def clearFolder( fileExt=extTRANS, dirName=folderTEMP):
     test = os.listdir(dirName)
 
     for item in test:
@@ -140,7 +146,7 @@ def clearFolder( fileExt='transl', dirName='temp'):
 
 def rescanFolders():
     makeNewDirs()
-    print( 'scan tl folder')
+    print( f'scan {folderTL} folder')
     global fileTRans
     global fileStat
     fileTRans = listTransFiles()
@@ -156,12 +162,12 @@ def listFileUpdate( fileStat):
     for fileName in fileStat['files']:
         i += 1
         fs = fileStat['files'][fileName]
-        listFile.insert( tk.END,  "{:3}|{:<30.30}|{:>10,}|{:>7}".format( i, fs['name'], fs['tempFSize'], fs['tempFLine']))
+        listFile.insert( tk.END,  "{:3}|{:<30.30}|{:>10,}|{:>7}".format( i, fileName, fs['tempFSize'], fs['tempFLine']))
 
 
 def listTransFiles():
     filesAll = []
-    for top, dirs, files in os.walk('./tl/'):                           # Находим файлы для перевода в дирректории
+    for top, dirs, files in os.walk( f'./{folderTL}/'):                           # Находим файлы для перевода в дирректории
         for nm in files:
             if nm not in fileSkip:
                 filesAll.append(os.path.join(top, nm))
@@ -172,14 +178,15 @@ def listTransFiles():
 
 def listFileStats( fileList):
     dicTemp  = {}
-    i        = 0
+    filesCur = 0
 
     for filePath in fileList:                           # Находим файлы для перевода в дирректории
 
         fileName = os.path.basename( filePath)
-        fileSize = os.path.getsize( filePath)
+        fileSize = os.path.getsize(  filePath)
+        fileBase, fileExt  = os.path.splitext( fileName)
         filesMax = len( fileList)
-        i        += 1
+        filesCur += 1
 
         allFile = []
         with open( filePath, encoding='utf-8') as infile:
@@ -196,19 +203,28 @@ def listFileStats( fileList):
                 # wordslist = line.split()
                 # words += len(wordslist)
                 # characters += sum(len(word) for word in wordslist)
-        if fileName not in dicTemp: dicTemp[fileName] = {}
+
+        i = 0
+        while fileName in dicTemp:
+            i += 1
+            fileName = '{} ({:02}){}'.format( fileBase, i, fileExt)
+
+        dicTemp[fileName] = {}
 
         fs = dicTemp[fileName]
 
-        fs['name'] = fileName
+        fs['name'] = fileBase + fileExt
         fs['size'] = fileSize
         fs["path"] = filePath
         fs['lines'] = lines
         fs["chars"] = linesLen
         fs['tempFLine'] = 0
         fs['tempFSize'] = 0
-        fs['filesMax'] = filesMax
-        fs['filesCur'] = i
+        fs['filesMax']  = filesMax
+        fs['filesCur']  = filesCur
+        fs['nameTemp']  = f'{folderTEMP}/{fileName}.{extTEMP}'
+        fs['nameTrans'] = f'{folderTEMP}/{fileName}.{extTRANS}'
+        fs['nameRPY']   = f'{folderRPY}/{fileName}'
 
     fileStat   = { 'files': {}, 'setting': {}}
     listSorted = { key: dicTemp[key] for key in sorted( dicTemp)}
@@ -232,6 +248,7 @@ def findCorrect( fix):                                                 # кор�
     fix = re.sub( r'Большой([\.\!\?]{1})', r'Отлично\1', fix)
     fix = re.sub( r'Прохладный([\.\!\?]{1})', r'Здорово\1', fix)
 
+    fix = re.sub( r'([A-ZА-Я])-([А-Я])(\w+)', r'\2-\2\3', fix)                     # T-Спасибо -=> С-Спасибо
     fix = re.sub( r'(\d+)\W*%', r'\1\%', fix)                                   # 123% => 123\%
 
     fix = fix.replace( '"', '\'')
@@ -279,7 +296,7 @@ def findTempBrackets( fileTRans):
 
     i = 0
     for line in textLine01:
-        if line != textLine02[i]:
+        if line != textLine02[i] and len( line) >= 1 and textLine02[i] >= 1:
             dictTemp[line] = textLine02[i]
             print( line + ' -=> ' + textLine02[i])
         i += 1
@@ -300,7 +317,6 @@ def findTempBrackets( fileTRans):
 
         with open( fileNameTemp, 'w', encoding='utf-8') as file:
             file.write(filedata)
-
     # print(dictTemp, True)
 
 
@@ -320,7 +336,7 @@ def findZamena( oLine, dictZamena, dictZamenaPR):
 
 def tryToTranslate( oLine, lineSize, file):
 
-    fileName     = 'temp\\{}.transl'.format( str( file))
+    fileName     = fileStat['files'][file]['nameTrans'] #'temp\\{}.transl'.format( str( file))
     fileTempSize = fileStat['files'][file]['tempFLine']
     filesMax     = fileStat['files'][file]['filesMax']
     filesCur     = fileStat['files'][file]['filesCur']
@@ -374,10 +390,9 @@ def tryToTranslate( oLine, lineSize, file):
         f.close()
 
 
-def makeTempFiles( fileTRans):
+def makeTempFiles( fileStat):
 
-    clearFolder( 'tmp')
-    clearFolder( 'transl')
+    clearFolder( extTEMP)
     print( "start creating temp files...", True)
 
     dictZamena = {}
@@ -388,22 +403,16 @@ def makeTempFiles( fileTRans):
     textTag.delete( '1.0', tk.END)
     textEng.delete( '1.0', tk.END)
 
-    for file in fileTRans:
+    for fileName in fileStat['files']:
 
         allFile = []
-        with open( file, encoding='utf-8') as f:
-            # skip    = 0
+        with open( fileStat['files'][fileName]['path'], encoding='utf-8') as f:
             skip01  = 0
             fileSize= 0
             lines   = 0
             allFile = f.read()
-
-            fileName = os.path.basename( file)
-            fileText = allFile.split('\n')
-
-            tmpFileName   = 'temp\\{}.tmp'.format( str( fileName))
-            transFileName = 'temp\\{}.transl'.format( str( fileName))
-            tmpFile       = open( tmpFileName, 'w', encoding='utf-8')
+            fileText= allFile.split('\n')
+            tmpFile = open( fileStat['files'][fileName]['nameTemp'], 'w', encoding='utf-8')
 
             for line in fileText:
 
@@ -433,22 +442,15 @@ def makeTempFiles( fileTRans):
         fileStat['setting']['totalLine'] = totalLine
         sorted_income = {k: dictZamena[k] for k in sorted(dictZamena)}
 
-        # oprint( fileName, totalLine, lines)
-
     for zamane in sorted_income:
         textTag.insert( tk.END, zamane + '\n')
-        # textEng.insert( tk.END, zamane + '\n')
-        # textTag.see(tk.END)
-        # textEng.see(tk.END)
 
     for zamane in dictZamenaPR:
         textTag.insert( tk.END, zamane + '\n')
-        # textEng.insert( tk.END, zamane + '\n')
 
     textTag['state'] = tk.DISABLED
     listFileUpdate(fileStat)
     print( "temp files done!")
-    # print( fileStat)
 
 
 def fileStatsUpdate( fileTRans):
@@ -458,9 +460,7 @@ def fileStatsUpdate( fileTRans):
 
     for fileName in fileStat['files']:
 
-        fileNameTemp  = 'temp\\{}.tmp'.format( str( fileName))
-
-        with open( fileNameTemp, 'r', encoding='utf-8') as file :
+        with open( fileStat['files'][fileName]['nameTemp'], 'r', encoding='utf-8') as file :
             allFile = file.read()
             current_file_text = allFile.split('\n')
             lines = 0
@@ -480,9 +480,9 @@ def fileStatsUpdate( fileTRans):
     fileStat['setting']['totalSize'] = totalSize
 
 
-def makeTransFiles( fileTRans):
+def makeTransFiles( fileStat):
     global allStart
-    clearFolder( 'transl')
+    clearFolder( extTRANS)
     print( 'start translating...', True)
     currentSize = 0
     currentLine = 0
@@ -493,10 +493,8 @@ def makeTransFiles( fileTRans):
 
     for fileName in fileStat['files']:
 
-        fileNameTemp    = 'temp\\{}.tmp'.format( str( fileName))
         lineCount       = -1
-
-        with open( fileNameTemp, encoding='utf-8') as f:
+        with open( fileStat['files'][fileName]['nameTemp'], encoding='utf-8') as f:
 
             lineTemp    = ""
             allFile     = f.read()
@@ -522,13 +520,11 @@ def makeTransFiles( fileTRans):
 
             if len( lineTemp) > 1:
                 tryToTranslate( lineTemp, lineCount, fileName)
-                # lineTemp    = ""
 
     threadSTOP.do_run = False
     btnTranslate['text']    = '3 translate start'
     print( 'translating done!')
     if allStart:
-        # allStart = False
         makeRPYFiles( fileTRans)
     else:
         mb.showinfo( "trans", 'make TRANS files done!')
@@ -537,21 +533,21 @@ def makeTransFiles( fileTRans):
 def makeRPYFiles( fileTRans):
 
     print( 'start compile renpy files...', True)
-    clearFolder( 'rpy', 'transl')
+    clearFolder( 'rpy', folderRPY)
 
-    for file in fileTRans:
+    for fileName in fileStat['files']:
 
         lineFoundCount  = 0
-        fileName        = os.path.basename( file)
-        fileNameTrans   = 'temp\\{}.transl'.format( str( fileName))
-        fileNameDone    = 'transl\\{}'.format(str(fileName))
+        fileNameTrans   = fileStat['files'][fileName]['nameTrans'] #'temp\\{}.transl'.format( str( fileName))
+        fileNameDone    = fileStat['files'][fileName]['nameRPY'] #'transl\\{}'.format(str(fileName))
+        fileNameOrig    = fileStat['files'][fileName]['path']
         allFile         = []
 
         try:
             fileTemp    = open( fileNameTrans, encoding='utf-8').read()
             linesTemp   = fileTemp.split('\n') # readlines()
 
-            with open( file, encoding='utf-8') as f:
+            with open( fileNameOrig, encoding='utf-8') as f:
                 skip01  = 0
                 allFile = f.read()
                 fileAllText = allFile.split('\n')
@@ -610,7 +606,7 @@ def makeALLFiles():
     allStart = True
 
     rescanFolders()
-    makeTempFiles( fileTRans)
+    makeTempFiles( fileStat)
     treatTranslate( fileTRans)
 
 
@@ -620,7 +616,7 @@ def treatTranslate( fileTRans):
     if btnTranslate['text'] == '3 translate start':
         btnTranslate['text']    = '3 translate stop'
 
-        threadSTOP = threading.Thread( name='trans', target=makeTransFiles, args=( fileTRans,))
+        threadSTOP = threading.Thread( name='trans', target=makeTransFiles, args=( fileStat,))
         threadSTOP.do_run = True
         threadSTOP.start()
     else:
@@ -723,7 +719,7 @@ group1.columnconfigure(6, weight=1, minsize=15)
 # group1.columnconfigure(7, weight=0, minsize=15)
 
 btnTLScan       = ttk.Button( group1, text="0 rescan tl folder",   width=15, command= lambda: rescanFolders())
-btnMakeTemp     = ttk.Button( group1, text="1 make temp files",    width=15, command= lambda: makeTempFiles( fileTRans))
+btnMakeTemp     = ttk.Button( group1, text="1 make temp files",    width=15, command= lambda: makeTempFiles( fileStat))
 btnTempRepl     = ttk.Button( group1, text="2 tags replace",       width=15, command= lambda: findTempBrackets( fileStat))
 btnTranslate    = ttk.Button( group1, text="3 translate start",    width=15, command= lambda: treatTranslate( fileTRans))
 btnMakeRPY      = ttk.Button( group1, text="4 make Renpy files",   width=15, command= lambda: makeRPYFiles( fileTRans))
