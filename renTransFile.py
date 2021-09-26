@@ -11,7 +11,7 @@ from tkinter import messagebox as mb
 # from tkinter.ttk import Progressbar, Style, Button
 
 from deep_translator import GoogleTranslator
-###############################################################################################################################
+########################################################################################################################
 
 fileTRans   = []
 fileStat    = {}
@@ -153,7 +153,6 @@ def rescanFolders():
     fileStat  = listFileStats( fileTRans)
     return fileTRans, fileStat
 
-
 def listFileUpdate( fileStat):
     i = 0
     listFile.delete(0, tk.END)
@@ -188,7 +187,7 @@ def listFileStats( fileList):
         filesMax = len( fileList)
         filesCur += 1
 
-        allFile = []
+        # allFile = []
         with open( filePath, encoding='utf-8') as infile:
             allFile = infile.read()
             current_file_text = allFile.split('\n')
@@ -298,11 +297,11 @@ def findTempBrackets( fileTRans):
     for line in textLine01:
         if line != textLine02[i] and len( line) >= 1 and textLine02[i] >= 1:
             dictTemp[line] = textLine02[i]
-            print( line + ' -=> ' + textLine02[i])
+            print( f'{line} -=> {textLine02[i]}')
         i += 1
 
     for tempFile in fileStat['files']:
-        fileNameTemp  = 'temp\\{}.tmp'.format( str( tempFile))
+        fileNameTemp  = fileStat['files'][tempLine]['nameTemp'] #'temp\\{}.tmp'.format( str( tempFile))
 
         # Read in the file
         with open( fileNameTemp, 'r', encoding='utf-8') as file :
