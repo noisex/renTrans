@@ -163,6 +163,14 @@ def listFileUpdate( fileStat):
         fs = fileStat['files'][fileName]
         listFile.insert( tk.END,  "{:3}|{:<30.30}|{:>10,}|{:>7}".format( i, fileName, fs['tempFSize'], fs['tempFLine']))
 
+    totalLine    = fileStat['setting']['totalLine']
+    totalSize    = fileStat['setting']['totalSize']
+    currentLine  = fileStat['setting']['currentLine']
+    currentSize  = fileStat['setting']['currentSize']
+
+    lbLine['text']  = '{:,} из {:,}'.format( currentLine, totalLine)
+    lbLines['text'] = '{:,} из {:,}'.format( currentSize, totalSize)
+
 
 def listTransFiles():
     filesAll = []
@@ -220,7 +228,7 @@ def listFileStats( fileList):
         fs['tempFLine'] = 0
         fs['tempFSize'] = 0
         fs['filesMax']  = filesMax
-        fs['filesCur']  = filesCur
+        # fs['filesCur']  = filesCur
         fs['nameTemp']  = f'{folderTEMP}/{fileName}.{extTEMP}'
         fs['nameTrans'] = f'{folderTEMP}/{fileName}.{extTRANS}'
         fs['nameRPY']   = f'{folderRPY}/{fileName}'
@@ -228,8 +236,14 @@ def listFileStats( fileList):
     fileStat   = { 'files': {}, 'setting': {}}
     listSorted = { key: dicTemp[key] for key in sorted( dicTemp)}
 
-    for key in listSorted:
+    for filesCur, key in enumerate( listSorted):
         fileStat['files'][key] = dicTemp[key]
+        fileStat['files'][key]['filesCur']  = filesCur + 1
+
+    fileStat['setting']['currentLine']  = 0
+    fileStat['setting']['currentSize']  = 0
+    fileStat['setting']['totalSize']    = 0
+    fileStat['setting']['totalLine']    = 0
 
     listFileUpdate( fileStat)
     # print( fileStat)
@@ -266,12 +280,12 @@ def findCorrect( fix):                                                 # кор�
     return fix
 
 
-def findSkobki( tLine, oLine):                                      # замена кривых, т.е. всех, переведенных тегов на оригинальные
-    for reFind in reBrackets:
-        oResultSC = re.findall( reFind, oLine)                              # ищем теги в скобках в оригинальной строке
+def findSkobki( tLine: str, oLine: str):                                      # замена кривых, т.е. всех, переведенных тегов на оригинальные
+    for re_find in reBrackets:
+        oResultSC = re.findall(re_find, oLine)                              # ищем теги в скобках в оригинальной строке
 
         if oResultSC:
-            tResultSC = re.findall( reFind, tLine)                          # ищем теги в скобках в переведенной строке
+            tResultSC = re.findall(re_find, tLine)                          # ищем теги в скобках в переведенной строке
             for i in range( len( oResultSC)):
                 try:
                     tLine = tLine.replace( tResultSC[i], oResultSC[i])              # заменяем переведенные кривые теги оригинальными по порядку
@@ -295,13 +309,13 @@ def findTempBrackets( fileTRans):
 
     i = 0
     for line in textLine01:
-        if line != textLine02[i] and len( line) >= 1 and textLine02[i] >= 1:
+        if len( line) >= 1 and line != textLine02[i]: # and textLine02[i] >= 1:
             dictTemp[line] = textLine02[i]
             print( f'{line} -=> {textLine02[i]}')
         i += 1
 
     for tempFile in fileStat['files']:
-        fileNameTemp  = fileStat['files'][tempLine]['nameTemp'] #'temp\\{}.tmp'.format( str( tempFile))
+        fileNameTemp  = fileStat['files'][tempFile]['nameTemp'] #'temp\\{}.tmp'.format( str( tempFile))
 
         # Read in the file
         with open( fileNameTemp, 'r', encoding='utf-8') as file :
@@ -524,12 +538,12 @@ def makeTransFiles( fileStat):
     btnTranslate['text']    = '3 translate start'
     print( 'translating done!')
     if allStart:
-        makeRPYFiles( fileTRans)
+        makeRPYFiles()
     else:
         mb.showinfo( "trans", 'make TRANS files done!')
 
 
-def makeRPYFiles( fileTRans):
+def makeRPYFiles():
 
     print( 'start compile renpy files...', True)
     clearFolder( 'rpy', folderRPY)
@@ -606,10 +620,10 @@ def makeALLFiles():
 
     rescanFolders()
     makeTempFiles( fileStat)
-    treatTranslate( fileTRans)
+    treatTranslate()
 
 
-def treatTranslate( fileTRans):
+def treatTranslate():
     global threadSTOP
 
     if btnTranslate['text'] == '3 translate start':
@@ -720,8 +734,8 @@ group1.columnconfigure(6, weight=1, minsize=15)
 btnTLScan       = ttk.Button( group1, text="0 rescan tl folder",   width=15, command= lambda: rescanFolders())
 btnMakeTemp     = ttk.Button( group1, text="1 make temp files",    width=15, command= lambda: makeTempFiles( fileStat))
 btnTempRepl     = ttk.Button( group1, text="2 tags replace",       width=15, command= lambda: findTempBrackets( fileStat))
-btnTranslate    = ttk.Button( group1, text="3 translate start",    width=15, command= lambda: treatTranslate( fileTRans))
-btnMakeRPY      = ttk.Button( group1, text="4 make Renpy files",   width=15, command= lambda: makeRPYFiles( fileTRans))
+btnTranslate    = ttk.Button( group1, text="3 translate start",    width=15, command= lambda: treatTranslate())
+btnMakeRPY      = ttk.Button( group1, text="4 make Renpy files",   width=15, command= lambda: makeRPYFiles())
 btnALL          = ttk.Button( group1, text="just Translate",       width=15, command= makeALLFiles)
 
 btnTLScan.grid(   row=0, column=0, sticky='NWES')
