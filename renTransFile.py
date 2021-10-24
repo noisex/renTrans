@@ -153,6 +153,7 @@ def rescanFolders():
     fileStat  = listFileStats( fileTRans)
     return fileTRans, fileStat
 
+
 def listFileUpdate( fileStat):
     i = 0
     listFile.delete(0, tk.END)
@@ -167,6 +168,8 @@ def listFileUpdate( fileStat):
     totalSize    = fileStat['setting']['totalSize']
     currentLine  = fileStat['setting']['currentLine']
     currentSize  = fileStat['setting']['currentSize']
+
+    fileStat['setting']['dictTemp'] = {}
 
     lbLine['text']  = '{:,} из {:,}'.format( currentLine, totalLine)
     lbLines['text'] = '{:,} из {:,}'.format( currentSize, totalSize)
@@ -212,7 +215,7 @@ def listFileStats( fileList):
                 # characters += sum(len(word) for word in wordslist)
 
         i = 0
-        while fileName in dicTemp:
+        while fileName in dicTemp:                  # приписывает число к имени, если есть такой файл
             i += 1
             fileName = '{} ({:02}){}'.format( fileBase, i, fileExt)
 
@@ -254,14 +257,14 @@ def findCorrect( fix):                                                 # кор�
     # %(РС - %(p_name)s
 
     fix = re.sub( r'(-)$', r'.', fix)                                           # -" => ."
-    fix = re.sub( '^да$', 'Да', fix)
+    fix = re.sub( '^да', 'Да', fix)
     fix = re.sub( r'(\s+)([\.\!\?])', r'\2', fix)                               # убираем парные+ пробелы и пробелы перед знаком препинания
 
     fix = re.sub( r'К[аА][кК][иИоО]\w{1}([-\.\!\?]{1})', r'Что\1', fix)         # Какие -> Что
     fix = re.sub( r'Большой([\.\!\?]{1})', r'Отлично\1', fix)
     fix = re.sub( r'Прохладный([\.\!\?]{1})', r'Здорово\1', fix)
 
-    fix = re.sub( r'([A-ZА-Я])-([А-Я])(\w+)', r'\2-\2\3', fix)                     # T-Спасибо -=> С-Спасибо
+    fix = re.sub( r'([A-ZА-Я])-([а-яА-Я])(\w+)', r'\2-\2\3', fix)                     # T-Спасибо -=> С-Спасибо
     fix = re.sub( r'(\d+)\W*%', r'\1\%', fix)                                   # 123% => 123\%
 
     fix = fix.replace( '"', '\'')
@@ -282,15 +285,19 @@ def findCorrect( fix):                                                 # кор�
 
 def findSkobki( tLine: str, oLine: str):                                      # замена кривых, т.е. всех, переведенных тегов на оригинальные
     for re_find in reBrackets:
-        oResultSC = re.findall(re_find, oLine)                              # ищем теги в скобках в оригинальной строке
+        tResultSC = re.findall(re_find, tLine)                              # ищем теги в скобках в оригинальной строке
 
-        if oResultSC:
-            tResultSC = re.findall(re_find, tLine)                          # ищем теги в скобках в переведенной строке
+        if tResultSC:
+            oResultSC = re.findall(re_find, oLine)                          # ищем теги в скобках в переведенной строке
             for i in range( len( oResultSC)):
-                try:
-                    tLine = tLine.replace( tResultSC[i], oResultSC[i])              # заменяем переведенные кривые теги оригинальными по порядку
-                except:
-                    pass
+
+                if tResultSC[i] != '[123]':
+                    try:
+                        tLine = tLine.replace( tResultSC[i], oResultSC[i])              # заменяем переведенные кривые теги оригинальными по порядку
+                    except:
+                        pass
+                else:
+                    tLine = tLine.replace( '[123]', '')
 
     return tLine
 
@@ -316,21 +323,21 @@ def findTempBrackets( fileTRans):
 
     for tempFile in fileStat['files']:
         fileNameTemp  = fileStat['files'][tempFile]['nameTemp'] #'temp\\{}.tmp'.format( str( tempFile))
-
         # Read in the file
         with open( fileNameTemp, 'r', encoding='utf-8') as file :
             filedata = file.read()
-
         # Replace the target string
         for tempLine in dictTemp:
 
             if tempLine != dictTemp[tempLine]:
                 # oprint( tempLine, dictTemp[tempLine])
-                filedata = filedata.replace( tempLine, dictTemp[tempLine])
+                filedata = filedata.replace( tempLine, dictTemp[tempLine] + '[123]')
 
         with open( fileNameTemp, 'w', encoding='utf-8') as file:
             file.write(filedata)
-    # print(dictTemp, True)
+
+    fileTRans['setting']['dictTemp'] = dictTemp
+    # print( fileTRans['setting']['dictTemp'], True)
 
 
 def findZamena( oLine, dictZamena, dictZamenaPR):
@@ -385,6 +392,7 @@ def tryToTranslate( oLine, lineSize, file):
     else:
         try:
             tLine = GoogleTranslator( source='en', target='ru').translate( oLine)
+            # print( tLine)
         except:
             print( len(oLine))
             print( oLine)
@@ -414,7 +422,7 @@ def makeTempFiles( fileStat):
     totalLine  = 0
     textTag['state'] = tk.NORMAL
     textTag.delete( '1.0', tk.END)
-    textEng.delete( '1.0', tk.END)
+    # textEng.delete( '1.0', tk.END)
 
     for fileName in fileStat['files']:
 
@@ -545,6 +553,7 @@ def makeTransFiles( fileStat):
 
 def makeRPYFiles():
 
+    global allStart
     print( 'start compile renpy files...', True)
     clearFolder( 'rpy', folderRPY)
 
@@ -611,6 +620,7 @@ def makeRPYFiles():
     print( 'можно копировать все это ( папка /transl/) обратно в игру ( папка /game/tl/rus/)', True)
 
     if allStart:
+        allStart = False
         mb.showinfo( 'all done', 'make RPY files done')
 
 
@@ -620,6 +630,7 @@ def makeALLFiles():
 
     rescanFolders()
     makeTempFiles( fileStat)
+    findTempBrackets( fileStat)
     treatTranslate()
 
 
