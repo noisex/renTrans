@@ -109,12 +109,17 @@ class CreateToolTip(object):
             tw.destroy()
 #############################################################################################
 
-def print( line, newLine=False):
+def print( line, newLine=False, lastLine=False):
     if newLine:
         textLogs.insert( tk.END, '[{}]\n'.format( time.strftime('%H:%M:%S')))
 
     textLogs.insert( tk.END, '[{}] {}\n'.format( time.strftime('%H:%M:%S'), str( line)))
+
+    if lastLine:
+        textLogs.insert( tk.END, '[{}]\n'.format( time.strftime('%H:%M:%S')))
+
     textLogs.see( tk.END)
+
 
 
 def update():
@@ -146,7 +151,7 @@ def clearFolder( fileExt=extTRANS, dirName=folderTEMP):
 
 def rescanFolders():
     makeNewDirs()
-    print( f'scan {folderTL} folder')
+    print( f'[scan {folderTL} folder]')
     global fileTRans
     global fileStat
     fileTRans = listTransFiles()
@@ -182,7 +187,7 @@ def listTransFiles():
             if nm not in fileSkip:
                 filesAll.append(os.path.join(top, nm))
 
-    print( 'make listFiles')
+    print( '[make listFiles]')
     return sorted( list(filter(lambda x: x.endswith('.rpy'), filesAll)))
 
 
@@ -247,10 +252,40 @@ def listFileStats( fileList):
     fileStat['setting']['currentSize']  = 0
     fileStat['setting']['totalSize']    = 0
     fileStat['setting']['totalLine']    = 0
+    fileStat['setting']['replCount']    = 0
 
     listFileUpdate( fileStat)
     # print( fileStat)
     return fileStat
+
+
+def fileStatsUpdate( fileTRans):
+
+    totalLine = 0
+    totalSize = 0
+
+    for fileName in fileStat['files']:
+
+        with open( fileStat['files'][fileName]['nameTemp'], 'r', encoding='utf-8') as file :
+            allFile = file.read()
+            current_file_text = allFile.split('\n')
+            lines = 0
+            linesLen = 0
+
+            for line in current_file_text:
+                lines += 1
+                linesLen += len( line)
+
+            totalLine = totalLine + lines
+            totalSize = totalSize + linesLen
+
+            fileStat['files'][fileName]['tempFSize'] = linesLen
+            fileStat['files'][fileName]['tempFLine'] = lines - 1
+
+    fileStat['setting']['totalLine'] = totalLine
+    fileStat['setting']['totalSize'] = totalSize
+
+
 
 # TODO процент с цыфрой без экрана
 def findCorrect( fix):                                                 # корректировка всяких косяков первода, надо перписать...
@@ -291,53 +326,59 @@ def findSkobki( tLine: str, oLine: str):                                      # 
             oResultSC = re.findall(re_find, oLine)                          # ищем теги в скобках в переведенной строке
             for i in range( len( oResultSC)):
 
-                if tResultSC[i] != '[123]':
-                    try:
+                try:
+                    if tResultSC[i] != '[123]':
                         tLine = tLine.replace( tResultSC[i], oResultSC[i])              # заменяем переведенные кривые теги оригинальными по порядку
-                    except:
-                        pass
-                else:
-                    tLine = tLine.replace( '[123]', '')
+                    else:
+                        tLine = tLine.replace( '[123]', '')
+                except:
+                    pass
 
     return tLine
 
 
 def findTempBrackets( fileTRans):
-    dictTemp   = {}
+    print( '[change brackets]')
+    dictTemp    = {}
+    textLine01  = textTag.get(1.0, tk.END).split('\n')
+    texLineEng  = textEng.get(1.0, tk.END)
+    textLine02  = texLineEng.split('\n')
 
-    text01     = textTag.get(1.0, tk.END)
-    text02     = textEng.get(1.0, tk.END)
-    textLine01 = text01.split('\n')
-    textLine02 = text02.split('\n')
-
-    if len( text02) <= 1:
-        print( 'nothing to change, skiped...', True)
+    if len( texLineEng) <= 1:
+        print( ' -=> nothing to change, skiped...', False, True)
         return
 
-    i = 0
-    for line in textLine01:
-        if len( line) >= 1 and line != textLine02[i]: # and textLine02[i] >= 1:
-            dictTemp[line] = textLine02[i]
-            print( f'{line} -=> {textLine02[i]}')
-        i += 1
+    for i, line in enumerate(textLine02):
+        if len( line) >= 1:
+            try:
+                if line != textLine01[i] and len(textLine01[i]) > 1:
+                    dictTemp[textLine01[i]] = {}
+                    dictTemp[textLine01[i]]['data'] = line
+                    dictTemp[textLine01[i]]['count'] = 0
+                    # print( f' -=> {line} -=> {textLine01[i]}')
+            except:
+                print( ' !!! {} -=> Skipped'.format( line))
+                pass
 
     for tempFile in fileStat['files']:
-        fileNameTemp  = fileStat['files'][tempFile]['nameTemp'] #'temp\\{}.tmp'.format( str( tempFile))
-        # Read in the file
+        fileNameTemp  = fileStat['files'][tempFile]['nameTemp']
+
         with open( fileNameTemp, 'r', encoding='utf-8') as file :
             filedata = file.read()
-        # Replace the target string
-        for tempLine in dictTemp:
 
-            if tempLine != dictTemp[tempLine]:
-                # oprint( tempLine, dictTemp[tempLine])
-                filedata = filedata.replace( tempLine, dictTemp[tempLine] + '[123]')
+        for tempLine in dictTemp:
+            if tempLine != dictTemp[tempLine]['data']:
+                dictTemp[tempLine]['count'] += filedata.count( tempLine)
+                filedata = filedata.replace( tempLine, dictTemp[tempLine]['data'] + '[123]')
 
         with open( fileNameTemp, 'w', encoding='utf-8') as file:
             file.write(filedata)
 
+    for tempLine in dictTemp:
+        print( ' -=> {:3} {} -=> {}'.format( dictTemp[tempLine]['count'], tempLine, dictTemp[tempLine]['data']))
+
     fileTRans['setting']['dictTemp'] = dictTemp
-    # print( fileTRans['setting']['dictTemp'], True)
+    print( '')
 
 
 def findZamena( oLine, dictZamena, dictZamenaPR):
@@ -414,7 +455,7 @@ def tryToTranslate( oLine, lineSize, file):
 def makeTempFiles( fileStat):
 
     clearFolder( extTEMP)
-    print( "start creating temp files...", True)
+    print( "[creat temp files]")
 
     dictZamena = {}
     dictZamenaPR = {}
@@ -464,47 +505,22 @@ def makeTempFiles( fileStat):
         sorted_income = {k: dictZamena[k] for k in sorted(dictZamena)}
 
     for zamane in sorted_income:
+        # if len( zamane) > 1:
         textTag.insert( tk.END, zamane + '\n')
 
     for zamane in dictZamenaPR:
+        # if len( zamane) > 1:
         textTag.insert( tk.END, zamane + '\n')
 
     textTag['state'] = tk.DISABLED
     listFileUpdate(fileStat)
-    print( "temp files done!")
-
-
-def fileStatsUpdate( fileTRans):
-
-    totalLine = 0
-    totalSize = 0
-
-    for fileName in fileStat['files']:
-
-        with open( fileStat['files'][fileName]['nameTemp'], 'r', encoding='utf-8') as file :
-            allFile = file.read()
-            current_file_text = allFile.split('\n')
-            lines = 0
-            linesLen = 0
-
-            for line in current_file_text:
-                lines += 1
-                linesLen += len( line)
-
-            totalLine = totalLine + lines
-            totalSize = totalSize + linesLen
-
-            fileStat['files'][fileName]['tempFSize'] = linesLen
-            fileStat['files'][fileName]['tempFLine'] = lines - 1
-
-    fileStat['setting']['totalLine'] = totalLine
-    fileStat['setting']['totalSize'] = totalSize
+    # print( "[temp files done]", True)
 
 
 def makeTransFiles( fileStat):
     global allStart
     clearFolder( extTRANS)
-    print( 'start translating...', True)
+    print( '[translating start]')
     currentSize = 0
     currentLine = 0
     fileStat['setting']['timeSTART'] = datetime.today().timestamp()
@@ -524,7 +540,7 @@ def makeTransFiles( fileStat):
             for line in fileAllText:
 
                 if not getattr( threadSTOP, "do_run"):
-                    print( 'translate break.', True)
+                    print( 'translate break.', True, True)
                     return
 
                 lineCount    += 1
@@ -544,7 +560,7 @@ def makeTransFiles( fileStat):
 
     threadSTOP.do_run = False
     btnTranslate['text']    = '3 translate start'
-    print( 'translating done!')
+    print( '[translating done!]', False, True)
     if allStart:
         makeRPYFiles()
     else:
@@ -554,7 +570,7 @@ def makeTransFiles( fileStat):
 def makeRPYFiles():
 
     global allStart
-    print( 'start compile renpy files...', True)
+    print( '[start compile renpy files]', True)
     clearFolder( 'rpy', folderRPY)
 
     for fileName in fileStat['files']:
@@ -565,7 +581,8 @@ def makeRPYFiles():
         fileNameOrig    = fileStat['files'][fileName]['path']
         allFile         = []
 
-        try:
+        # try:
+        if True:
             fileTemp    = open( fileNameTrans, encoding='utf-8').read()
             linesTemp   = fileTemp.split('\n') # readlines()
 
@@ -611,13 +628,13 @@ def makeRPYFiles():
                 # print( "make file [" + fileName + '] done')
                 new_rpy_tr.close()
 
-        except:
-            print( f'file ({fileNameTrans}) not found! make translate first.')
+        # except:
+            # print( f'file ({fileNameTrans}) not found! make translate first.')
             # mb.showerror( 'error', f'trans file ( {fileNameTrans}) not found! make translate first.')
             # break
 
-    print( 'compile renpy files done!!!')
-    print( 'можно копировать все это ( папка /transl/) обратно в игру ( папка /game/tl/rus/)', True)
+    print( 'можно копировать все это ( папка /transl/) обратно в игру ( папка /game/tl/rus/)')
+    print( '[compile renpy files done!!!]', False, True)
 
     if allStart:
         allStart = False
@@ -775,7 +792,7 @@ button6_ttp = CreateToolTip(btnALL,         'Одна кнопка для все
 # sizeGrip.grid( row=0, column=6, sticky=tk.SE)
 
 rescanFolders()
-
+# oprint( root.winfo_toplevel())
 root.after(1000, update)
 root.mainloop()
 
