@@ -2,6 +2,8 @@ import os
 import re
 import time
 import threading
+import logging
+
 
 import tkinter as tk
 import tkinter.ttk as ttk
@@ -10,14 +12,16 @@ from datetime import datetime
 from tkinter import messagebox as mb
 # from tkinter.ttk import Progressbar, Style, Button
 
+from toolTip import CreateToolTip
 from deep_translator import GoogleTranslator
+from deep_translator.exceptions import RequestError
 ########################################################################################################################
 
 fileTRans   = []
 fileStat    = {}
 threadSTOP  = False
 allStart    = False
-TRLEN       = 4700 # 4700 for GoogleTranslate
+TRLEN       = 4100 # 4700 for GoogleTranslate
 
 folderTL    = './tl'
 folderTEMP  = './temp'
@@ -51,63 +55,11 @@ reBrackets  = [
     '(\\%\\(.+?\\))'        # процент со скобкой - %()
 ]
 
+logging.basicConfig(filename='example.log', format='%(asctime)s %(message)s', datefmt='%Y.%d.%m %H:%M:%S', encoding='utf-8', level=logging.ERROR)
+
 fileSkip    = [ 'gui.rpy', "common.rpy", "options.rpy", "screens.rpy", 'xxx_transparent.rpy', 'xxx_toggle_menu.rpy' ]
 # fileSkip    = []
 
-#################################################################################################################
-class CreateToolTip(object):
-    """
-    create a tooltip for a given widget
-    """
-    def __init__(self, widget, text='widget info'):
-        self.waittime = 500     #miliseconds
-        self.wraplength = 300   #pixels
-        self.widget = widget
-        self.text = text
-        self.widget.bind("<Enter>", self.enter)
-        self.widget.bind("<Leave>", self.leave)
-        self.widget.bind("<ButtonPress>", self.leave)
-        self.id = None
-        self.tw = None
-
-    def enter(self, event=None):
-        self.schedule()
-
-    def leave(self, event=None):
-        self.unschedule()
-        self.hidetip()
-
-    def schedule(self):
-        self.unschedule()
-        self.id = self.widget.after(self.waittime, self.showtip)
-
-    def unschedule(self):
-        id = self.id
-        self.id = None
-        if id:
-            self.widget.after_cancel(id)
-
-    def showtip(self, event=None):
-        x = y = 0
-        x, y, cx, cy = self.widget.bbox("insert")
-        x += self.widget.winfo_rootx() + 25
-        y += self.widget.winfo_rooty() + 20
-        # creates a toplevel window
-        self.tw = tk.Toplevel(self.widget)
-        # Leaves only the label and removes the app window
-        self.tw.wm_overrideredirect(True)
-        self.tw.wm_geometry("+%d+%d" % (x, y))
-        label = tk.Label(self.tw, text=self.text, justify='left',
-                       background="#ffffff", relief='solid', borderwidth=1,
-                       wraplength = self.wraplength)
-        label.pack(ipadx=1)
-
-    def hidetip(self):
-        tw = self.tw
-        self.tw= None
-        if tw:
-            tw.destroy()
-#############################################################################################
 
 def print( line, newLine=False, lastLine=False):
     if newLine:
@@ -119,7 +71,6 @@ def print( line, newLine=False, lastLine=False):
         textLogs.insert( tk.END, '[{}]\n'.format( time.strftime('%H:%M:%S')))
 
     textLogs.see( tk.END)
-
 
 
 def update():
@@ -178,6 +129,7 @@ def listFileUpdate( fileStat):
 
     lbLine['text']  = '{:,} из {:,}'.format( currentLine, totalLine)
     lbLines['text'] = '{:,} из {:,}'.format( currentSize, totalSize)
+    print( f'-=> {i} files found')
 
 
 def listTransFiles():
@@ -377,7 +329,7 @@ def findTempBrackets( fileTRans):
     for tempLine in dictTemp:
         print( ' -=> {:3} {} -=> {}'.format( dictTemp[tempLine]['count'], tempLine, dictTemp[tempLine]['data']))
 
-    fileTRans['setting']['dictTemp'] = dictTemp
+    # fileTRans['setting']['dictTemp'] = dictTemp
     print( '')
 
 
@@ -395,7 +347,7 @@ def findZamena( oLine, dictZamena, dictZamenaPR):
             dictZamenaPR[oResultPR[i]] = oResultPR[i]              # выписываем в словарь тэги в квадратных скобках
 
 
-def tryToTranslate( oLine, lineSize, file):
+def tryToTranslate( oLine, currentFileLine, file):
 
     fileName     = fileStat['files'][file]['nameTrans'] #'temp\\{}.transl'.format( str( file))
     fileTempSize = fileStat['files'][file]['tempFLine']
@@ -433,20 +385,25 @@ def tryToTranslate( oLine, lineSize, file):
     else:
         try:
             tLine = GoogleTranslator( source='en', target='ru').translate( oLine)
-            # print( tLine)
-        except:
-            print( len(oLine))
-            print( oLine)
+
+        except RequestError as e:
+            print( f'-=> ERROR: {e} -=> line: {currentFileLine} ( {len( oLine)}b) at [{file}]')
+            logging.error( f'ERROR -=> line: {currentFileLine} ( {len(oLine)}b) at [{file}] ({e})' )
+
+        except Exception as error:
+            print( f'ERROR -=> line: {currentFileLine} ( {len(oLine)}b) at [{file}] ({error})' )
+            logging.error( f'ERROR -=> line: {currentFileLine} ( {len(oLine)}b) at [{file}] ({error})' )
+            # print( oLine)
             tLine = oLine
 
-    if fileTempSize != 0:
-        fileReadProc = ( lineSize / fileTempSize) * 100
-    else:
-        fileReadProc = 0
-
-    print( '-=> {:5}% {:2}/{} [{:.35}]'.format( round( fileReadProc, 1), filesCur, filesMax, file))
-
     if tLine:
+        if fileTempSize != 0:
+            fileReadProc = ( currentFileLine / fileTempSize) * 100
+        else:
+            fileReadProc = 0
+
+        print( '-=> {:5}% {:2}/{} [{:.35}]'.format( round( fileReadProc, 1), filesCur, filesMax, file))
+
         f = open( fileName,'a', encoding='utf-8')
         f.write( tLine + '\n')
         f.close()
@@ -455,7 +412,7 @@ def tryToTranslate( oLine, lineSize, file):
 def makeTempFiles( fileStat):
 
     clearFolder( extTEMP)
-    print( "[creat temp files]")
+    print( "[make temp files]")
 
     dictZamena = {}
     dictZamenaPR = {}
@@ -581,8 +538,7 @@ def makeRPYFiles():
         fileNameOrig    = fileStat['files'][fileName]['path']
         allFile         = []
 
-        # try:
-        if True:
+        try:
             fileTemp    = open( fileNameTrans, encoding='utf-8').read()
             linesTemp   = fileTemp.split('\n') # readlines()
 
@@ -628,10 +584,12 @@ def makeRPYFiles():
                 # print( "make file [" + fileName + '] done')
                 new_rpy_tr.close()
 
-        # except:
-            # print( f'file ({fileNameTrans}) not found! make translate first.')
+        except FileNotFoundError:
+            print( f'Error. File [{fileNameTrans}] not found or can`t read.')
+            logging.error( f'Error. File [{fileNameTrans}] not found or can`t read.' )
             # mb.showerror( 'error', f'trans file ( {fileNameTrans}) not found! make translate first.')
             # break
+
 
     print( 'можно копировать все это ( папка /transl/) обратно в игру ( папка /game/tl/rus/)')
     print( '[compile renpy files done!!!]', False, True)
@@ -795,6 +753,10 @@ rescanFolders()
 # oprint( root.winfo_toplevel())
 root.after(1000, update)
 root.mainloop()
+
+
+
+# (.{2,5}?)([0-9]*) against this input: $50,000
 
 
 # i = 5 if a > 7 else 0
