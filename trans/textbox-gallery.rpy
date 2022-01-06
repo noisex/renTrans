@@ -1,2 +1,3 @@
-Галерея
-Прозрачность текстового поля
+Gallery
+Textbox transparency
+

@@ -10,30 +10,29 @@ class gameRenpy():
     def __init__(self, app, *args, **kwargs):
         # tk.Tk.__init__(self, *args, **kwargs)
         self.gameFolder     = 'D:\\AdGames\\'
-        self._folderBak     = 'Backup'
+        self.backupFolder   = 'Backup'
         self.folderTL       = 'tl\\'
         self.folderTEMP     = 'temp\\'
         self.folderTRANS    = 'trans\\'
         self.folderRPY      = 'tl_done\\'
-        self.sdkFollder     = 'D:\\AdGames\\!renpy-7.3.5-sdk\\'
+        self.sdkFollder     = 'D:\\AdGames\\_renpy-sdk\\'
         self.rootPath       = os.path.abspath(os.getcwd()) + '\\'  # C:\GitHub\renTrans\
 
         self.app            = app
         self.gameName       = False
         self.path           = False
         self.gamePath       = False
-        self.fullPath       = False
-        self.fullGamePath   = False
+        self.shortPath      = False
+        # self.fullGamePath   = False
         self.totalLines     = 0
         self.totalSize      = 0
         self.totalFiles     = 0
         self.currentLine    = 0
         self.currentSize    = 0
-        self.currentFiles   = 0
+        self.currentFile    = 0
         self.timeSTART      = 0
         self.wordDicCount   = 0
-        self.backupFolder   = 'Backup'
-        self.fileSkip       = [ 'gui.rpy', "common.rpy", "options.rpy", "screens.rpy", 'xxx_transparent.rpy', 'xxx_toggle_menu.rpy' ]
+        self.fileSkip       = [ 'gui.rpy', "common.rpy", "options.rpy", "screens.rpy", 'xxx_transparent.rpy', 'xxx_toggle_menu.rpy', 'qFont.ttf', 'webfont.ttf', 'cormac.ttf' ]
 
         self.makeNewDirs()
 
@@ -68,11 +67,11 @@ class gameRenpy():
             self.app.print( f'Папка {self.folderTRANS} - она просто нужна...')
 
     def makeNewBackupFolder( self):
-        self.backupFolder = self._folderBak
+        self.backupFolder = self.backupFolder
         i = 0
         while os.path.exists( self.getPath()+ "\\" + self.backupFolder):                  # приписывает число к имени, если есть такой файл
             i += 1
-            self.backupFolder = '{} ({:02})'.format( self._folderBak, i)
+            self.backupFolder = '{} ({:02})'.format( self.backupFolder, i)
     def getBackupFolder( self):
         return self.backupFolder
 
@@ -143,8 +142,8 @@ class gameRenpy():
         self.gameName       = self.app.listGames.selection_get()
         self.path           = self.gameFolder + self.gameName + '\\'
         self.gamePath       = self.gameFolder + self.gameName + '\\game\\'
-        self.fullPath       = self.gameFolder + self.path
-        self.fullGamePath   = self.gameFolder + self.fullPath
+        self.shortPath      = self.path
+        # self.fullGamePath   = self.gameFolder + self.fullPath
         self.app.lbGameSelected['fg'] ='#00f'
         self.app.lbGameSelected['text'] = self.gameName[0:25]
 
@@ -163,12 +162,12 @@ class gameRenpy():
         if not self.gameName:
             self.app.print( 'Error with game dir. No game selected!', True)
 
-    def getGameFulPath( self):
-        self.checkSelectedGamme( )
-        return fullGamePath
-    def getFulPath( self):
-        self.checkSelectedGamme()
-        return self.fullPath
+    # def getGameFulPath( self):
+    #     self.checkSelectedGamme( )
+    #     return fullGamePath
+    # def getFulPath( self):
+    #     self.checkSelectedGamme()
+    #     return self.fullPath
     def getPathGame( self):
         self.checkSelectedGamme( )
         return self.gamePath

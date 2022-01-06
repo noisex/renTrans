@@ -24,14 +24,10 @@ from transClass import translator
 from fontTools.ttLib import TTFont
 ########################################################################################################################
 
-fileStat    = {}
 dictZamena  = {}
 threadSTOP  = False
 allStart    = False
 TRLEN       = 4990 # 4700 for GoogleTranslate
-
-extTEMP     = 'tmp'
-extTRANS    = 'transl'
 
 testRun     = False
 # testRun     = True
@@ -337,7 +333,7 @@ def read_rpyc_data( ):
     for fileName in filesRPY:
         fileCurrent += 1
         cmd = f'"{game.getPath()}lib\\windows-i686\\python.exe" -O "unrpyc.py" -c --init-offset "{fileName}"'
-        print( cmd)
+        # print( cmd)
         percent = str( round((( fileCurrent / filesTotal) * 100), 2))
         app.pbSet( percent, f'{fileCurrent}/{filesTotal}')
 
@@ -445,7 +441,7 @@ def listGamesDClick( event):
     gameScanRPA()
 
 
-def clearFolder( fileExt=extTRANS, dirName=str):
+def clearFolder( fileExt='.rpy', dirName=str):
 
     if fileExt == '*':
         shutil.rmtree( dirName)
@@ -617,7 +613,7 @@ def findZamena( oLine, dictZamena):
                 dictZamena[oResult[i]]['count'] = dictZamena[oResult[i]]['count'] +1
 
 
-def tryToTranslate( oLine, currentFileLine, file, currentFile, totalFiles, tempFilleLines, fileTransName):
+def tryToTranslate( oLine, currentFileLine, file, tempFilleLines, fileTransName):
 
     app.progressUpdate( game)
 
@@ -633,7 +629,7 @@ def tryToTranslate( oLine, currentFileLine, file, currentFile, totalFiles, tempF
         else:
             fileReadProc = 0
 
-        app.print( '-=> {:5}% {:2}/{} ({:4}) [{:.35}]'.format( round( fileReadProc, 1), currentFile, totalFiles, len( oLine), file))
+        app.print( '-=> {:5}% {:2}/{} ({:4}) [{:.35}]'.format( round( fileReadProc, 1), game.currentFile, game.totalFiles, len( oLine), file))
 
         f = open( fileTransName,'a', encoding='utf-8')
         f.write( tLine)
@@ -686,21 +682,21 @@ def makeTempFiles( event):
     app.pbReset()
     listFileStats( event, path=game.folderTEMP, withTL=True, withStat=True)
 
-def makeTransFiles( fileStat):
+def makeTransFiles():
     clearFolder( '*', game.folderTRANS)
     app.print( 'translating start...', True)
 
     fileList    = game.getListFilesByExt( '.rpy', game.folderTEMP, withStat=True)
     currentSize = 0
     currentLine = 0
-    currentFile = 0
-    totalFiles  = len( fileList)
+    game.currentFile = 0
+    game.totalFiles  = len( fileList)
     game.timeSTART = datetime.today().timestamp()
 
     for fileName in fileList:
 
         lineCount       = 0
-        currentFile     += 1
+        game.currentFile     += 1
         tempFilleLines  = fileList[fileName]['lines']
         fileTransName   = game.folderTRANS + fileList[fileName]['fileShort']
         smartDirs( fileTransName)
@@ -725,7 +721,7 @@ def makeTransFiles( fileStat):
                 # print( lineCount, currentSize, line)
 
                 if lineSize + lineCurSize >= TRLEN:
-                    tryToTranslate( lineTemp, lineCount, fileList[fileName]['fileShort'], currentFile, totalFiles, tempFilleLines, fileTransName)
+                    tryToTranslate( lineTemp, lineCount, fileList[fileName]['fileShort'], tempFilleLines, fileTransName)
                     lineTemp    = ""
 
                 lineTemp     = lineTemp + line + '\n'
@@ -734,7 +730,7 @@ def makeTransFiles( fileStat):
                 game.currentSize = currentSize
 
             if len( lineTemp) > 1:
-                tryToTranslate( lineTemp, lineCount, fileList[fileName]['fileShort'], currentFile, totalFiles, tempFilleLines, fileTransName)
+                tryToTranslate( lineTemp, lineCount, fileList[fileName]['fileShort'], tempFilleLines, fileTransName)
 
     threadSTOP.do_run = False
     app.btnTranslate['text']    = 'translate start'
@@ -844,7 +840,7 @@ def treatTranslate( event):
     if app.btnTranslate['text'] == 'translate start':
         app.btnTranslate['text']    = 'translate stop'
 
-        threadSTOP = threading.Thread( name='trans', target=makeTransFiles, args=( fileStat,))
+        threadSTOP = threading.Thread( name='trans', target=makeTransFiles, args=( ))
         threadSTOP.do_run = True
         threadSTOP.start()
     else:

@@ -1,3 +1,4 @@
+.gitignore
 /__pycache__/*
 /tl/*
 /transl/*
@@ -5,3 +6,4 @@
 /tl_done/*
 /test/*
 /.idea/*
+*.log

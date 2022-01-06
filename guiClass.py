@@ -214,7 +214,7 @@ class yoFrame( tk.Tk):
         self.lbLine['text']  = '{:,} из {:,}'.format( currentLine, totalLine)
         self.lbLines['text'] = '{:,} из {:,}'.format( currentSize, totalSize)
         percent         = str( round((( currentLine / totalLine) * 100), 2))
-        self.pbSet( percent, 'fileName')
+        self.pbSet( percent, f'{game.currentFile}/{game.totalFiles}')
 
 
     def listFileUpdate( self, fileStat):
