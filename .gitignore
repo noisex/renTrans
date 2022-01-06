@@ -1,6 +1,7 @@
+/__pycache__/*
 /tl/*
 /transl/*
 /temp/*
-/rus/*
+/tl_done/*
 /test/*
 /.idea/*
