@@ -11,12 +11,12 @@ class gameRenpy():
         # tk.Tk.__init__(self, *args, **kwargs)
         self.gameFolder     = 'D:\\AdGames\\'
         self.backupFolder   = 'Backup'
-        self.folderTL       = 'tl\\'
-        self.folderTEMP     = 'temp\\'
-        self.folderTRANS    = 'trans\\'
-        self.folderRPY      = 'tl_done\\'
-        self.sdkFollder     = 'D:\\AdGames\\_renpy-sdk\\'
+        self.folderTL       = 'workFolder\\tl\\'
+        self.folderTEMP     = 'workFolder\\temp\\'
+        self.folderTRANS    = 'workFolder\\trans\\'
+        self.folderRPY      = 'workFolder\\tl_done\\'
         self.rootPath       = os.path.abspath(os.getcwd()) + '\\'  # C:\GitHub\renTrans\
+        self.sdkFollder     = self.rootPath + 'renpy-sdk\\'
 
         self.app            = app
         self.gameName       = False

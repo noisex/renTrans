@@ -2,7 +2,6 @@ import os
 import re
 import time
 import threading
-import logging
 import sys
 import shutil
 from shutil import copytree, ignore_patterns, rmtree
@@ -93,7 +92,6 @@ itemSize    = '{size=-5}{color=#777}'
 reMenu      = '\\s{4,}menu:'
 reSpace     = '\\s{4}'
 
-logging.basicConfig(filename='example.log', format='%(asctime)s %(message)s', datefmt='%Y.%m.%d %H:%M:%S', encoding='utf-8', level=logging.ERROR)
 ############################################################################################################################
 
 def smartDirs( path):

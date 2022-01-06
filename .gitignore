@@ -1,4 +1,5 @@
 .gitignore
+/renpy-sdk/*
 /__pycache__/*
 /tl/*
 /transl/*
@@ -6,4 +7,5 @@
 /tl_done/*
 /test/*
 /.idea/*
-*.log
+/logs/*
+/workFolder/*

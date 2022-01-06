@@ -1,5 +1,6 @@
 import os
 import time
+import logging
 
 import tkinter as tk
 import tkinter.ttk as ttk
@@ -22,6 +23,10 @@ class yoFrame( tk.Tk):
 
     def __init__(self, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
+
+        logFileName = "logs\\mainlog_" + time.strftime("%Y.%m.%d")+'.log'
+
+        logging.basicConfig(filename=logFileName, format='%(asctime)s %(message)s', datefmt='%Y.%m.%d %H:%M:%S', encoding='utf-8', level=logging.INFO)
 
         # self= tk.Tk()
         self.minsize( 1300, 400)
@@ -250,6 +255,7 @@ class yoFrame( tk.Tk):
             self.textLogs.insert( tk.END, '[{}]\n'.format( time.strftime('%H:%M:%S')))
 
         self.textLogs.insert( tk.END, '[{}] {}\n'.format( time.strftime('%H:%M:%S'), str( line)))
+        logging.info( line)
 
         if lastLine:
             self.textLogs.insert( tk.END, '[{}]\n'.format( time.strftime('%H:%M:%S')))
