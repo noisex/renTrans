@@ -4,23 +4,20 @@ import time
 import threading
 import sys
 import shutil
-from shutil import copytree, ignore_patterns, rmtree
 
 import subprocess
-
-from unrpa import UnRPA
-
 import tkinter as tk
 import tkinter.ttk as ttk
 
+from unrpa import UnRPA
 from datetime import datetime
 from tkinter import messagebox as mb
+from fontTools.ttLib import TTFont
+from shutil import copytree, ignore_patterns, rmtree
 
 from guiClass import yoFrame
 from gameClass import gameRenpy
 from transClass import translator
-
-from fontTools.ttLib import TTFont
 ########################################################################################################################
 
 dictZamena  = {}
@@ -28,8 +25,6 @@ threadSTOP  = False
 allStart    = False
 TRLEN       = 4990 # 4700 for GoogleTranslate
 
-testRun     = False
-# testRun     = True
 engTRANS    = False
 testWait    = 0.1
 
@@ -68,7 +63,7 @@ wordDic = {
     'щенки':    'сиськи',
     'задницу':  'жопу',
     'диплом':   'кончить',
-    'перебирать':   'дрочить',
+    'перебирать':       'дрочить',
     'мастурбировать':   'дрочить',
     'мастурбирую':      'дрочу',
 }
@@ -226,8 +221,7 @@ def menuFileWrite( filePath=str, fileText=list, fileShort=str):
     # oprint( itemDict)
 
     tmpFile = open( f'{filePath}', 'w', encoding='utf-8')
-    logging.error( f'[{filePath}]')
-    app.print( f'menu finded in [{fileShort}]')
+    app.print( f'-=> [{fileShort}]')
 
     for line in fileText:
         lineID += 1
@@ -241,7 +235,7 @@ def menuFileWrite( filePath=str, fileText=list, fileShort=str):
 
             line = itemClearFromOld( line, strReplace)
             line = line.replace( strReplace, itemDict[filePath][lineID] + strReplace)
-            logging.error( f'-=> [{lineID}] = [{line.strip()}]')
+            app.log.error( f'[{lineID}] = [{line.strip()}]')
 
         tmpFile.write( line + '\n')
     tmpFile.close()
@@ -250,7 +244,7 @@ def menuFileWrite( filePath=str, fileText=list, fileShort=str):
 def findMenuStart( event):
     fileList = game.getListFilesByExt( '.rpy', False, False)
     game.makeNewBackupFolder()
-    app.print( 'finding menu with variablles...', True)
+    app.print( f'finding menu with variablles ( backUp in [{game.backupFolder}])...', True)
     for filePath in fileList:
         with open( filePath, encoding='utf-8') as infile:
             fileText = infile.read().split('\n')
@@ -269,10 +263,13 @@ def copyTLStuffBack():
     old = game.folderRPY
     new = f'{pathGame}tl\\rus\\'
 
-    clearFolder( '*', new)
+    if os.path.exists( old) and os.path.exists( new):
+        clearFolder( '*', new)
+        shutil.copytree( old, new, dirs_exist_ok=True)
+        app.print( f'Files from [{old}] copied back to [{new}].')
+    else:
+        app.print( f'ERROR: folder [{old}] not found. {os.path.exists( new)}', True)
 
-    shutil.copytree( old, new, dirs_exist_ok=True)
-    app.print( f'Files from [{old}] copied back to [{new}].')
 
 def copyTLStuff( event):
     pathGame = game.getPathGame()
@@ -281,10 +278,14 @@ def copyTLStuff( event):
 
     old = f'{pathGame}tl\\rus\\'
     new = game.folderTL
-    clearFolder( '*', new)
-    shutil.copytree( old, new, dirs_exist_ok=True, ignore=ignore_patterns('*.rpyc', 'xxx_*', 'common.rpy', 'options.rpy', 'screens.rpy'))
-    app.print( f'Files from [{old}] copied to [{new}].')
-    listFileStats( event)
+
+    if os.path.exists( old) and os.path.exists( new):
+        clearFolder( '*', new)
+        shutil.copytree( old, new, dirs_exist_ok=True, ignore=ignore_patterns('*.rpyc', 'xxx_*', 'common.rpy', 'options.rpy', 'screens.rpy'))
+        app.print( f'Files from [{old}] copied to [{new}].')
+        listFileStats( event)
+    else:
+        app.print( f'ERROR: folder [{old}] not found. {os.path.exists( new)}', True)
 
 
 def scanInputFolder( event):
@@ -332,7 +333,7 @@ def read_rpyc_data( ):
         fileCurrent += 1
         cmd = f'"{game.getPath()}lib\\windows-i686\\python.exe" -O "unrpyc.py" -c --init-offset "{fileName}"'
         # print( cmd)
-        percent = str( round((( fileCurrent / filesTotal) * 100), 2))
+        percent = ( fileCurrent / filesTotal) * 100
         app.pbSet( percent, f'{fileCurrent}/{filesTotal}')
 
         p = subprocess.Popen( cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)#, cwd= f'{game.gameFolder}!renpy-7.3.5-sdk\\')
@@ -351,19 +352,17 @@ def read_rpyc_data( ):
     app.print( f'Decompiling compete. {good} files done with {bad} errors.', False)
 
 
-def gameScanRPA():
+def getListFilesRPA( fullScan=False):
     global dicRPA
 
     pathGame = game.getPathGame()
+    dicRPA = {}
     filesRPY = 0
     filesFonts = 0
-    dicRPA = {}
 
-    if os.path.exists( pathGame):
-        app.print( f'Game: {game.gameName}', True)
-
+    if pathGame:
         fileList = game.getListFilesByExt( '.rpa')
-        foundRPA = len( fileList)
+        app.print( '')
 
         for fileName in fileList:
             fileSize = os.path.getsize( fileName) / ( 1024 *1024)
@@ -372,40 +371,84 @@ def gameScanRPA():
             archNames = extractor.list_files()
             archNamesCount = len( archNames)
 
-            app.print( f" [{fileList[fileName]['fileShort']}] [{fileSize:,.1f} mb] [{archNamesCount:,} files]")
+            if not app.allExctract.get():
+                app.print( f"-=> [{fileList[fileName]['fileShort']}] [{fileSize:,.1f} mb] [{archNamesCount:,} files]")
+            else:
+                app.print( f'-=> [{archNamesCount:,}] files from [{fileList[fileName]["fileShort"]}] selected...')
 
             for fileArchName in archNames:
-                # if fileName.endswith( '.rpy'):
+                if app.allExctract.get():
+                    if fileName not in dicRPA:
+                        dicRPA[fileName] = []
+                    dicRPA[fileName].append( fileArchName)
+
+                else:
+                    # if fileName.endswith( '.rpy'):
                     # print( f'{i} - {fileName}')
                     # filesRPY.append( fileName)
                     # if dirName.name not in dicRPA:
                         # dicRPA[dirName.name] = []
                     # dicRPA[dirName.name].append(fileName)
-                if fileArchName.endswith( '.rpyc'):
-                    filesRPY += 1
-                    if fileName not in dicRPA:
-                        dicRPA[fileName] = []
-                    dicRPA[fileName].append( fileArchName)
+                    if fileArchName.endswith( '.rpyc'):
+                        if fileName not in dicRPA:
+                            dicRPA[fileName] = []
+                        dicRPA[fileName].append( fileArchName)
 
-                elif os.path.splitext( fileArchName)[1] in extensions:
-                    filesFonts += 1
-                    if fileName not in dicRPA:
-                        dicRPA[fileName] = []
-                    dicRPA[fileName].append( fileArchName)
+                    elif os.path.splitext( fileArchName)[1] in extensions:
+                        if fileName not in dicRPA:
+                            dicRPA[fileName] = []
+                        dicRPA[fileName].append( fileArchName)
+
+        if not app.allExctract.get():
+            if len( dicRPA) >= 1:
+                for fileArchName in dicRPA:
+                    for fileName in dicRPA[fileArchName]:
+                        # if fileName.endswith( '.rpy'):
+                        if fileName.endswith( '.rpyc'):
+                            filesRPY += 1
+                        elif os.path.splitext( fileName)[1] in extensions:
+                            filesFonts += 1
+
+            if filesRPY >= 1:
+                app.print( f'with [{filesRPY}] RPYC files in achives.')
+            if filesFonts >= 1:
+                app.print( f'with [{filesFonts}] Fonts files in archives.')
+
+
+def gameScanRPA():
+    pathGame = game.getPathGame()
+
+
+    if pathGame:
+        app.print( f'Game: {game.gameName}', True)
 
         if os.path.exists( pathGame + '/tl/rus/'):
-            app.print( '-=> with RUS tl folder')
+            app.print( '-=> with [RUS] tl folder')
 
         if os.path.exists( pathGame + '/tl/russian/'):
-            app.print( '-=> with RUSSIAN tl folder')
+            app.print( '-=> with [RUSSIAN] tl folder')
 
-        if foundRPA > 0:
-            app.print( f'Found {foundRPA} RPA files.')
+        getListFilesRPA()
 
-        if filesRPY >= 1:
-            app.print( f' {filesRPY} RPYC files in achives.')
-        if filesFonts >= 1:
-            app.print( f' {filesFonts} Fonts files in archives.')
+
+def buttonExtractThread( pathGame):
+    if len( dicRPA) >= 1:
+
+        for fileName in dicRPA:
+            app.print( f'Extracting from {fileName}...', True)
+            extractor = UnRPA( fileName, path=pathGame)
+            extractor.extract_files( '.', dicRPA[fileName], app)
+
+
+def buttonExtract( event):
+    pathGame = game.getPathGame()
+    if not pathGame:
+        return
+
+    app.pbReset()
+    threadRun = threading.Thread( name='run', target=buttonExtractThread, args=( pathGame,))
+    threadRun.do_run = True
+    threadRun.start()
 
 
 def buttonDecompile( event):
@@ -415,24 +458,6 @@ def buttonDecompile( event):
 
     threadRPY = threading.Thread( name='rpy', target=read_rpyc_data) #, args=( filesRPY))
     threadRPY.start()
-
-
-def buttonExtract( event):
-    pathGame = game.getPathGame()
-    if not pathGame:
-        return
-
-    if len( dicRPA) >= 1:
-        app.print( 'Start extracting rpyc and fonts files from rpa...', True)
-        for fileName in dicRPA:
-            extractor = UnRPA( fileName, path=pathGame)
-            app.print( f'Extracting from {fileName}...')
-
-            for files in dicRPA[fileName]:
-                app.print( f'-=> {files}')
-
-            extractor.extract_files( '.', dicRPA[fileName])
-
 
 def listGamesDClick( event):
     game.listGameDCllick()
@@ -615,7 +640,7 @@ def tryToTranslate( oLine, currentFileLine, file, tempFilleLines, fileTransName)
 
     app.progressUpdate( game)
 
-    if testRun:
+    if app.testRun.get():
         tLine = oLine
         time.sleep( testWait)
     else:
@@ -682,7 +707,7 @@ def makeTempFiles( event):
 
 def makeTransFiles():
     clearFolder( '*', game.folderTRANS)
-    app.print( 'translating start...', True)
+    app.print( f'translating start with [{app.lang.get()}] language...', True)
 
     fileList    = game.getListFilesByExt( '.rpy', game.folderTEMP, withStat=True)
     currentSize = 0
@@ -736,7 +761,8 @@ def makeTransFiles():
     if allStart:
         makeRPYFiles()
     else:
-        mb.showinfo( "trans", 'make TRANS files done!')
+        if not app.focus_get(): # is not self.textLogs:
+            mb.showinfo( "trans", 'make TRANS files done!')
 
 
 def makeRPYFiles( event):
@@ -849,10 +875,7 @@ def treatTranslate( event):
 
 def tagsCopy( event):
     insertZamenaInText( app.textEng)
-
-
-def tagsClear( event):
-    app.textEng.delete( '1.0', tk.END)
+    app.tagsCopy()
 
 
 def runExternalCmd( path):
@@ -906,24 +929,26 @@ def main():
 
     app.listGames.bind('<Double-1>', listGamesDClick)
 
-    app.btnGameRescan.bind( '<Button-1>', game.gameListScan)
-    app.btnExtract.bind('<Button-1>', buttonExtract)
-    app.btnDecompile.bind('<Button-1>', buttonDecompile)
-    app.btnRunRenpy.bind('<Button-1>', btnRunSDKClick)
-    app.btnFontsCopy.bind('<Button-1>', scanInputFolder)
-    app.btnMenuFinder.bind('<Button-1>', findMenuStart)
-    app.btnCopyTL.bind('<Button-1>', copyTLStuff)
+    app.btnGameRescan.bind( '<ButtonRelease-1>', game.gameListScan)
+    app.btnExtract.bind('<ButtonRelease-1>', buttonExtract)
+    app.btnDecompile.bind('<ButtonRelease-1>', buttonDecompile)
+    app.btnRunRenpy.bind('<ButtonRelease-1>', btnRunSDKClick)
+    app.btnFontsCopy.bind('<ButtonRelease-1>', scanInputFolder)
+    app.btnMenuFinder.bind('<ButtonRelease-1>', findMenuStart)
+    app.btnCopyTL.bind('<ButtonRelease-1>', copyTLStuff)
 
-    app.btnTLScan.bind('<Button-1>', listFileStats)
-    app.btnMakeTemp.bind('<Button-1>', makeTempFiles)
-    app.btnTranslate.bind('<Button-1>', treatTranslate)
-    app.btnMakeRPY.bind('<Button-1>', makeRPYFiles)
-    # app.btnALL.bind('<Button-1>', makeALLFiles)
-    app.btnRunGame.bind('<Button-1>', btnRunGameCllick)
+    app.btnTLScan.bind('<ButtonRelease-1>', listFileStats)
+    app.btnMakeTemp.bind('<ButtonRelease-1>', makeTempFiles)
+    app.btnTranslate.bind('<ButtonRelease-1>', treatTranslate)
+    app.btnMakeRPY.bind('<ButtonRelease-1>', makeRPYFiles)
+    # app.btnALL.bind('<ButtonRelease-1>', makeALLFiles)
+    app.btnRunGame.bind('<ButtonRelease-1>', btnRunGameCllick)
 
-    app.btnTagCopy.bind('<Button-1>', tagsCopy)
-    app.btnTagClear.bind('<Button-1>', tagsClear)
-    app.btnTempRepl.bind('<Button-1>', findTempBrackets)
+    app.btnTagCopy.bind('<ButtonRelease-1>', tagsCopy)
+    app.btnTagClear.bind('<ButtonRelease-1>', app.tagsClear)
+    app.btnTempRepl.bind('<ButtonRelease-1>', findTempBrackets)
+
+    app.chAllEcxt['command'] = getListFilesRPA
 
     app.after(1000, app.updateUI)
     app.mainloop()

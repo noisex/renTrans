@@ -71,11 +71,11 @@ class translator:
             fs['stats']['size']  += size
 
         # print( fs)
-        for item in fs:
-            print( item, len( fs[item]), fs[item])
+        # for item in fs:
+        #     print( item, len( fs[item]), fs[item])
 
-        for item in fs['files']:
-            print( item, fs['files'][item])
+        # for item in fs['files']:
+        #     print( item, fs['files'][item])
         # print( f'\nfiles={files} - lines={line} - size={sizes}')
 
     def makeRPYFiles( self, event):

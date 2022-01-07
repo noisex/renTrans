@@ -9,6 +9,7 @@ from deep_translator.exceptions import RequestError
 class gameRenpy():
     def __init__(self, app, *args, **kwargs):
         # tk.Tk.__init__(self, *args, **kwargs)
+        self.backupFolderTemplate = 'Backup'
         self.gameFolder     = 'D:\\AdGames\\'
         self.backupFolder   = 'Backup'
         self.folderTL       = 'workFolder\\tl\\'
@@ -39,7 +40,7 @@ class gameRenpy():
     def lineTransate( self, oLine, currentFileLine='noNum', file='noFile'):
         tLine = False
         try:
-            tLine = GoogleTranslator( source='en', target='ru').translate( oLine) + '\n'
+            tLine = GoogleTranslator( source=self.app.lang.get(), target='ru').translate( oLine) + '\n'
 
         except RequestError as e:
             self.app.print( f'-=> ERROR: {e} -=> line: {currentFileLine} ( {len( oLine)}b) at [{file}]')
@@ -67,11 +68,13 @@ class gameRenpy():
             self.app.print( f'Папка {self.folderTRANS} - она просто нужна...')
 
     def makeNewBackupFolder( self):
-        self.backupFolder = self.backupFolder
+        self.backupFolder = self.backupFolderTemplate
         i = 0
         while os.path.exists( self.getPath()+ "\\" + self.backupFolder):                  # приписывает число к имени, если есть такой файл
             i += 1
-            self.backupFolder = '{} ({:02})'.format( self.backupFolder, i)
+            self.backupFolder = '{} ({:02})'.format( self.backupFolderTemplate, i)
+        # self.app.print( f'backup folder = {self.backupFolder}')
+
     def getBackupFolder( self):
         return self.backupFolder
 

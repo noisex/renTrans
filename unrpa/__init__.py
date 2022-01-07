@@ -110,8 +110,8 @@ class UnRPA:
                 file=sys.stderr if verbosity == UnRPA.error else sys.stdout,
             )
 
-    def extract_files(self, pathRPA, fileList) -> None:
-        self.path = pathRPA
+    def extract_files(self, pathRPA, fileList, app) -> None:
+        # self.path = pathRPA
         self.log(UnRPA.error, f"Extracting files from {self.archive}.")
         if self.mkdir:
             self.make_directory_structure(self.path)
@@ -119,10 +119,12 @@ class UnRPA:
             raise OutputDirectoryNotFoundError(self.path)
 
         version = self.version() if self.version else self.detect_version()
+        currentFile = 0
 
         with open(self.archive, "rb") as archive:
             index = self.get_index(archive, version)
             total_files = len(index)
+            totalFile = len( fileList)
             for file_number, (path, data) in enumerate(index.items()):
                 try:
                     if path in fileList:
@@ -136,6 +138,11 @@ class UnRPA:
                         )
                         with open(os.path.join(self.path, path), "wb") as output_file:
                             version.postprocess(file_view, output_file)
+
+                        currentFile += 1
+                        app.pbSet( (currentFile/totalFile) *100, f'{currentFile}/{totalFile}')
+                        app.print( f'-=> [{path}]')
+
                 except BaseException as error:
                     if self.continue_on_error:
                         self.log(
