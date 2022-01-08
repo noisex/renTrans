@@ -18,7 +18,6 @@ class yoFrame( tk.Tk):
             cls._frame = object.__new__(cls)
         # else:
             # print( '-=> Take olld dic = ', cls._frame)
-
         # print( '-=> current dic = ', cls._frame)
         return cls._frame
 
@@ -150,10 +149,10 @@ class yoFrame( tk.Tk):
         # lbPanel.columnconfigure(2, weight=1, minsize=10)
         lbPanel.grid( row=0, column=0, sticky='NWES')
 
-        lbEndAt         = tk.Label( lbPanel, text="Закончим:").grid(row=0, sticky=tk.E)
-        lbThought       = tk.Label( lbPanel, text="Через:"   ).grid(row=1, sticky=tk.E)
-        lbSrings        = tk.Label( lbPanel, text="Строка:"  ).grid(row=0, sticky=tk.E, column=2)
-        lbSize          = tk.Label( lbPanel, text="Размер:"  ).grid(row=1, sticky=tk.E, column=2)
+        tk.Label( lbPanel, text="Закончим:").grid(row=0, sticky=tk.E)
+        tk.Label( lbPanel, text="Через:"   ).grid(row=1, sticky=tk.E)
+        tk.Label( lbPanel, text="Строка:"  ).grid(row=0, sticky=tk.E, column=2)
+        tk.Label( lbPanel, text="Размер:"  ).grid(row=1, sticky=tk.E, column=2)
 
         self.lbStart    = tk.Label( lbPanel, text="", width=8)#.grid( row=0, sticky=tk.W, column=1)
         self.lbEnd      = tk.Label( lbPanel, text="", width=8)#.grid(   row=1, sticky=tk.W, column=1)
@@ -176,7 +175,7 @@ class yoFrame( tk.Tk):
         self.pbTotal         = ttk.Progressbar( groupComm, mode="determinate", length = 200, style='lbPBar')
         self.textLogs        = tk.Text( groupComm, height=4, width=53, font=("Consolas", 8))
 
-        self.pbTotal.grid(   row=1, column=0, sticky="NSEW")
+        self.pbTotal.grid(   row=1, column=0, sticky="NWSE")
         self.textLogs.grid(  row=2, column=0, sticky="NWES", padx=5, pady=5)
 
         self.textLogs.tag_configure("bold", font=("Consolas", 8, 'bold'), foreground='navy')
@@ -236,11 +235,12 @@ class yoFrame( tk.Tk):
         if self.listFile.focus_get() is not self.listFile:
             self.listFile.see( currentFile)
 
-        for i in range( len( result) - 1):
+        for i in range( len( result) + 0):
+            item = max( i -1, 1)
             if i <= currentFile:
-                self.listFile.itemconfig( i + 1, fg="#000", bg='#ddd')
+                self.listFile.itemconfig( item, fg="#000", bg='#ddd')
             else:
-                self.listFile.itemconfig( i + 1, fg="#000", bg='#fff')
+                self.listFile.itemconfig( item, fg="#000", bg='#fff')
 
 
     def tagsCopy( self):

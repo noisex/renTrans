@@ -2,6 +2,7 @@ import os
 import re
 import time
 import threading
+from settings import settings as set
 # import sys
 import shutil
 
@@ -31,43 +32,6 @@ testWait    = 0.1
 dicRPA      = {}
 itemDict    = {}
 
-wordDic = {
-    'вереск':   'Хизер',
-    'мед':      'милый',
-    'медовый':  'милый',
-    'членом':   'хуем',
-    'члена':    'хуя',
-    'члены':    'хуи',
-    'члене':    'хуе',
-    'член':     'хуй',
-    'петух':    'хуй',
-    'петуху':   'хую',
-    'члену':    'хую',
-    'киска':    'пизда',
-    'киску':    'пизду',
-    'киски':    'пизды',
-    'киске':    'пизде',
-    'киску':    'пизду',
-    'киской':   'пиздой',
-    'трахать':  'ебать',
-    'трахаю':   'ебу',
-    'трахнул':  'выебал',
-    'трахал':   'ебал',
-    'трахнуть': 'выебать',
-    'трахни':   'выеби',
-    'трахаешь': 'ебешь',
-    'трахают':  'ебут',
-    'трахнули': 'выебали',
-    'трахаться':'ебаться',
-    'олухи':    'сиськи',
-    'щенки':    'сиськи',
-    'задницу':  'жопу',
-    'диплом':   'кончить',
-    'перебирать':       'дрочить',
-    'мастурбировать':   'дрочить',
-    'мастурбирую':      'дрочу',
-}
-
 reZamena = [
     '(\\[\\w+?\\])',
     '(\\%\\(\\w+?\\)s)',
@@ -81,7 +45,7 @@ reBrackets  = [
 reFix       = re.compile(r'\b\w{3,15}\b')  # ищем слова 4+ для замены по словарю
 reTrans     = re.compile(r'"(.*[\w].*)"'), 0, 0
 
-extensions  = set([ '.ttf', '.otf'])
+extensions  = {'.ttf', '.otf'}
 itemSize    = '{size=-5}{color=#777}'
 
 reMenu      = '\\s{4,}menu:'
@@ -95,7 +59,7 @@ def smartDirs( path):
     except:
         pass
 
-def fileCopy( filePath=str):
+def fileCopy( filePath):
     fileNewName = filePath.replace( f'{game.getPathGame()}', '')
     fileBackPath = f'{game.getPath()}\\{game.getBackupFolder()}\\game\\{os.path.dirname( fileNewName)}\\'
     fileBackFile = fileBackPath + os.path.basename( filePath)
@@ -104,16 +68,18 @@ def fileCopy( filePath=str):
     shutil.copy2( filePath, fileBackFile) # complete target filename given
 
 
-def stringLevel( oLine=str) -> str:
+def stringLevel( oLine: str) -> int:
+    """back indent level of current line"""
     spaceResult = re.findall( reSpace, oLine)
     return len(spaceResult)
 
 
-def spacePrint( spaces=int):
-    ret = ''
-    for i in range( spaces * 4):
-        ret =  ret + ' '
-    return ret
+# def spacePrint( spaces: int) -> str:
+#     """ back 4x-time spaces"""
+#     ret = ''
+#     for i in range( spaces * 4):
+#         ret =  ret + ' '
+#     return ret
 
 
 def clearItem( line: str) -> str:
@@ -129,16 +95,15 @@ def clearItem( line: str) -> str:
     return line
 
 
-def clearMenuList( menuList=list, level=int):
+def clearMenuList( menuList: list, level:int) -> dict:
     retList = {}
     ### обновляем менюлист пуктами, которые еще не закрыты
     for menuLevel in menuList:
         if menuLevel < level:
             retList[menuLevel] = menuList[menuLevel]
-
     return retList
 
-
+#todo где-то тут надо влепить ПОП вместо пересборки списка менюшек
 def checkMenuList( level=int, lines=int, line=str, menuList=dict, menuDict=list):
     global itemDict
 
@@ -154,15 +119,12 @@ def checkMenuList( level=int, lines=int, line=str, menuList=dict, menuDict=list)
         #     menuDict[menuID]['end'] = lines
 
         ### следующий уровень - пишем пункт меню
-        if level == menuLevel + 1 and line.find( '  "') > 1 :
+        if level == menuLevel + 1 and '  "' in line:
             # menuDict[menuID]['items'].append( line)
             menuDict[menuID]['itemsID'].append( lines)
 
         ### текст тела меню - ищем переменные и пишем
-        if level == menuLevel + 2                \
-            and line.find( '  $') > 1       \
-            and line.find( '=') > 1         \
-            and line.find( 'renpy') < 1:
+        if ( level == menuLevel + 2) and ( '  $' in line)  and ( '=' in line)  and ( 'renpy' not in line):
 
             line = clearItem( line)
             itemsStrID = menuDict[menuID]['itemsID'][-1]
@@ -179,7 +141,7 @@ def checkMenuList( level=int, lines=int, line=str, menuList=dict, menuDict=list)
             # print( f'{spacePrint(level)}{line} {tList} {menuID} {itemsID}')
 
 
-def menuFileRead( filePath=str, fileText=list):
+def menuFileRead( filePath: str, fileText: list):
     menuDict = {}
     menuList = {}
     lineID = 0
@@ -201,7 +163,8 @@ def menuFileRead( filePath=str, fileText=list):
             checkMenuList( spaceLevel, lineID, line, menuList, menuDict)
 
 
-def itemClearFromOld( line=str, strReplace=str) -> str:
+def itemClearFromOld( line: str, strReplace: str) -> str:
+    """очищаем строку от добавленных ранее подсказок"""
     itemStart = line.find( itemSize)
     if itemStart > 0:
         itemEnd = line.find( strReplace)
@@ -212,7 +175,7 @@ def itemClearFromOld( line=str, strReplace=str) -> str:
     return strFull
 
 
-def menuFileWrite( filePath=str, fileText=list, fileShort=str):
+def menuFileWrite( filePath: str, fileText: list, fileShort: str):
     if len( itemDict[filePath]) < 2:
         return
 
@@ -228,7 +191,7 @@ def menuFileWrite( filePath=str, fileText=list, fileShort=str):
 
         if lineID in itemDict[filePath]:
 
-            if line.find( '":') > 10:   # если вконце меню есть ИФ или еще что-то
+            if '":' in line:   # если вконце меню есть ИФ или еще что-то
                 strReplace = '":'
             else:
                 strReplace = '" '
@@ -427,6 +390,7 @@ def listFileStats( event, path=False, withTL=True, withStat=False):
 
 def findDicReplacer( fix:str) -> str:
     fixRE =  re.findall( reFix, fix)
+    wordDic = set['wordDic']
 
     for item in fixRE:
         itemLow = item.lower()
@@ -507,10 +471,10 @@ def insertZamenaInText( textBox=False, longStr=False, retList=False):
 
     sorted_income = {k: dictZamena[k] for k in sorted(dictZamena)}
     for zamane in sorted_income:
-        if retList == True:
+        if retList:
             returnList.append( dictZamena[zamane]["item"])
         else:
-            if longStr == True:
+            if longStr:
                 textBox.insert( tk.END, f'{dictZamena[zamane]["count"]:3}| {dictZamena[zamane]["item"]}\n')
             else:
                 textBox.insert( tk.END, f'{dictZamena[zamane]["item"]}\n')
@@ -613,19 +577,16 @@ def makeTempFiles( event):
 
     for fileName in fileList:
 
-        allFile = []
         with open( fileName, encoding='utf-8') as f:
             skip01  = 0
-            allFile = f.read()
-            fileText= allFile.split('\n')
+            fileText= f.read().split('\n')
             tempFileName = game.folderTEMP + fileList[fileName]['fileShort']
 
             smartDirs( tempFileName)
             tmpFile = open( tempFileName, 'w', encoding='utf-8')
 
             for line in fileText:
-
-                if line.find( r' "') >= 1 and skip01 == 0:
+                if r' "' in line and skip01 == 0:
                     # skip01 = 0
                     skip01 = 1
 
@@ -711,7 +672,7 @@ def makeRPYFiles( event):
 
     global allStart
     app.print( 'start compile renpy files', True)
-    game.clearFolder( 'rpy', game.folderRPY)
+    game.clearFolder( '*', game.folderRPY)
 
     game.wordDicCount = 0
     fileList = game.getListFilesByExt( '.rpy', game.folderTL)
@@ -723,7 +684,6 @@ def makeRPYFiles( event):
         fileNameTrans   = game.folderTRANS + fileList[fileName]['fileShort']  #fileStat['files'][fileName]['nameTrans'] #'temp\\{}.transl'.format( str( fileName))
         fileNameDone    = game.folderRPY   + fileList[fileName]['fileShort'] #fileStat['files'][fileName]['nameRPY'] #'transl\\{}'.format(str(fileName))
         fileNameOrig    = fileName# fileStat['files'][fileName]['path']
-        allFile         = []
         smartDirs( fileNameDone)
 
         try:
@@ -737,7 +697,8 @@ def makeRPYFiles( event):
 
                 for lineCount, line in enumerate( fileAllText):
 
-                    if line.find( r' "') >= 1 and skip01 == 0:
+                    # if line.find( r' "' ) >= 1 and skip01 == 0:
+                    if r' "' in line  and skip01 == 0:
                         # skip01 = 0
                         skip01 = 1
 
@@ -777,7 +738,7 @@ def makeRPYFiles( event):
 
         except FileNotFoundError:
             app.print( f'Error. File [{fileNameTrans}] not found or can`t read.')
-            logging.error( f'Error. File [{fileNameTrans}] not found or can`t read.' )
+            # logging.error( f'Error. File [{fileNameTrans}] not found or can`t read.' )
             # mb.showerror( 'error', f'trans file ( {fileNameTrans}) not found! make translate first.')
             # break
 

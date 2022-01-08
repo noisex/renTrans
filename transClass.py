@@ -1,8 +1,10 @@
 # from guiClass import yoFrame
 import os
 # from itertools import (takewhile,repeat)
-import tkinter as tk
+# import tkinter as tk
 import tkinter.ttk as ttk
+from itertools import takewhile, repeat
+
 
 class translator:
     def __init__(self, app, game) -> None:

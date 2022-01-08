@@ -2,7 +2,7 @@ import os
 import shutil
 import tkinter as tk
 # import tkinter.ttk as ttk
-
+from settings import settings as set
 from itertools import (takewhile,repeat)
 from deep_translator import GoogleTranslator
 from deep_translator.exceptions import RequestError
@@ -11,14 +11,15 @@ class gameRenpy():
     def __init__(self, app, *args, **kwargs):
         # tk.Tk.__init__(self, *args, **kwargs)
         self.backupFolderTemplate = 'Backup'
-        self.gameFolder     = 'D:\\AdGames\\'
-        self.backupFolder   = 'Backup'
-        self.folderTL       = 'workFolder\\tl\\'
-        self.folderTEMP     = 'workFolder\\temp\\'
-        self.folderTRANS    = 'workFolder\\trans\\'
-        self.folderRPY      = 'workFolder\\tl_done\\'
+        self.gameFolder     = set['gameFolder'] #'D:\\AdGames\\'
+        self.backupFolder   = set['backupFolder'] #Backup'
+        self.folderTL       = set['folderTL'] #'workFolder\\tl\\'
+        self.folderTEMP     = set['folderTEMP'] #'workFolder\\temp\\'
+        self.folderTRANS    = set['folderTRANS'] #'workFolder\\trans\\'
+        self.folderRPY      = set['folderRPY'] #'workFolder\\tl_done\\'
         self.rootPath       = os.path.abspath(os.getcwd()) + '\\'  # C:\GitHub\renTrans\
-        self.sdkFolder     = self.rootPath + 'renpy-sdk\\'
+        self.sdkFolder      = self.rootPath + set['sdkFolder']
+        self.fileSkip       = set['fileSkip']
 
         self.app            = app
         self.gameName       = False
@@ -34,7 +35,6 @@ class gameRenpy():
         self.currentFile    = 0
         self.timeSTART      = 0
         self.wordDicCount   = 0
-        self.fileSkip       = [ 'gui.rpy', "common.rpy", "options.rpy", "screens.rpy", 'xxx_transparent.rpy', 'xxx_toggle_menu.rpy', 'qFont.ttf', 'webfont.ttf', 'cormac.ttf' ]
 
         self.makeNewDirs()
 
@@ -117,7 +117,7 @@ class gameRenpy():
 
         for top, dirs, files in os.walk( gamePath):                           # Находим файлы для перевода в дирректории
             for fileName in files:
-                if top.find( gamePathTemp) < 1 \
+                if gamePathTemp not in top \
                     and os.path.splitext( fileName)[1] in ext \
                     and fileName not in self.fileSkip:
 
@@ -164,7 +164,7 @@ class gameRenpy():
                 if dirName.is_dir() and os.path.exists( f'{self.gameFolder}{dirName.name}\\game\\') and os.path.exists( f'{self.gameFolder}{dirName.name}\\renpy\\'):
                     self.app.listGames.insert( tk.END, dirName.name)
 
-
+    # TODO rewrite listwalk vs listdir
     def clearFolder( self, fileExt='.rpy', dirName=str):
         if fileExt == '*':
             shutil.rmtree( dirName)

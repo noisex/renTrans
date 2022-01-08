@@ -153,7 +153,7 @@ class UnRPA:
                     else:
                         raise ErrorExtractingFile(traceback.format_exc()) from error
 
-    def list_files(self, ext= '') -> None:
+    def list_files(self, ext= ''):
         self.log(UnRPA.info, f"Listing files in {self.archive}:")
         with open(self.archive, "rb") as archive:
             paths = self.get_index(archive).keys()
