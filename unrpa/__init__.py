@@ -141,7 +141,7 @@ class UnRPA:
 
                         currentFile += 1
                         app.pbSet( (currentFile/totalFile) *100, f'{currentFile}/{totalFile}')
-                        app.print( f'-=> [{path}]')
+                        app.print( f'-=> [{currentFile:4}] [{path}]')
 
                 except BaseException as error:
                     if self.continue_on_error:

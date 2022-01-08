@@ -1,6 +1,7 @@
 import os
+import shutil
 import tkinter as tk
-import tkinter.ttk as ttk
+# import tkinter.ttk as ttk
 
 from itertools import (takewhile,repeat)
 from deep_translator import GoogleTranslator
@@ -17,7 +18,7 @@ class gameRenpy():
         self.folderTRANS    = 'workFolder\\trans\\'
         self.folderRPY      = 'workFolder\\tl_done\\'
         self.rootPath       = os.path.abspath(os.getcwd()) + '\\'  # C:\GitHub\renTrans\
-        self.sdkFollder     = self.rootPath + 'renpy-sdk\\'
+        self.sdkFolder     = self.rootPath + 'renpy-sdk\\'
 
         self.app            = app
         self.gameName       = False
@@ -66,6 +67,7 @@ class gameRenpy():
         if not os.path.exists( self.folderTRANS):                                       # создаем дирректорию для файлов с переводом (если нужно)
             os.mkdir( self.folderTRANS)
             self.app.print( f'Папка {self.folderTRANS} - она просто нужна...')
+
 
     def makeNewBackupFolder( self):
         self.backupFolder = self.backupFolderTemplate
@@ -134,21 +136,23 @@ class gameRenpy():
                         self.totalFiles += 1
                         filesAll[filePath]['lines']= lines
                         filesAll[filePath]['size'] = size
-
-
         # print( dict(sorted(filesAll.items())))
         # print( filesAll)
         return dict( sorted( filesAll.items()))
 
 
-    def listGameDCllick( self):
+    def listGameDClick( self):
         self.gameName       = self.app.listGames.selection_get()
         self.path           = self.gameFolder + self.gameName + '\\'
         self.gamePath       = self.gameFolder + self.gameName + '\\game\\'
-        self.shortPath      = self.path
-        # self.fullGamePath   = self.gameFolder + self.fullPath
-        self.app.lbGameSelected['fg'] ='#00f'
-        self.app.lbGameSelected['text'] = self.gameName[0:25]
+        # self.shortPath      = self.path
+        self.shortPath      = self.gameName + '\\'
+        self.app.print( f'Game: {self.gameName}', True, tag='bold')
+        if os.path.exists( self.gamePath + '/tl/rus/'):
+            self.app.print( '-=> with [RUS] tl folder')
+        if os.path.exists( self.gamePath + '/tl/russian/'):
+            self.app.print( '-=> with [RUSSIAN] tl folder')
+
 
     def gameListScan( self, app=False):
         self.app.listGames.delete(0, tk.END)
@@ -161,16 +165,19 @@ class gameRenpy():
                     self.app.listGames.insert( tk.END, dirName.name)
 
 
+    def clearFolder( self, fileExt='.rpy', dirName=str):
+        if fileExt == '*':
+            shutil.rmtree( dirName)
+        else:
+            test = os.listdir(dirName)
+            for item in test:
+                if item.endswith( fileExt):
+                    os.remove(os.path.join(dirName, item))
+
     def checkSelectedGamme( self):
         if not self.gameName:
             self.app.print( 'Error with game dir. No game selected!', True)
 
-    # def getGameFulPath( self):
-    #     self.checkSelectedGamme( )
-    #     return fullGamePath
-    # def getFulPath( self):
-    #     self.checkSelectedGamme()
-    #     return self.fullPath
     def getPathGame( self):
         self.checkSelectedGamme( )
         return self.gamePath

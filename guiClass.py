@@ -1,9 +1,10 @@
-import os
+# import os
 import time
 import logging
 
 import tkinter as tk
 import tkinter.ttk as ttk
+from tkinter import messagebox as mb
 
 # from toolTip import CreateToolTip
 from datetime import datetime
@@ -139,7 +140,7 @@ class yoFrame( tk.Tk):
         groupComm.columnconfigure(0, weight=1, minsize=30)
         groupComm.rowconfigure(   2, weight=2, pad=0)
 
-        lbPanel         = tk.Frame( groupComm, background="#99fb99")
+        lbPanel         = tk.Frame( groupComm) #, background="#99fb99")
         lbPanel.columnconfigure(0, weight=0, minsize=10)
         lbPanel.columnconfigure(1, weight=0, minsize=10)
         lbPanel.columnconfigure(2, weight=0, minsize=10)
@@ -178,6 +179,9 @@ class yoFrame( tk.Tk):
         self.pbTotal.grid(   row=1, column=0, sticky="NSEW")
         self.textLogs.grid(  row=2, column=0, sticky="NWES", padx=5, pady=5)
 
+        self.textLogs.tag_configure("bold", font=("Consolas", 8, 'bold'), foreground='navy')
+        self.textLogs.tag_configure("red", font=("Consolas", 8, 'bold'), foreground='red')
+
         # btnPanel = tk.Frame(groupComm, background="#99fb99")
         # btnPanel.grid( row=4, column=0, columnspan=4, sticky='NWES')
         # btnPanel.columnconfigure(0, weight=1, minsize=20)
@@ -213,6 +217,32 @@ class yoFrame( tk.Tk):
     #     print( btn)
     #     from renTransFile import mainBtnClickCTR
     #     mainBtnClickCTR( self, btn)
+    def gameListSet( self):
+        result   = self.listGames.get(0, tk.END)
+        selected = self.listGames.selection_get()
+
+        self.lbGameSelected['fg'] ='#00f'
+        self.lbGameSelected['text'] = selected[0:25]
+
+        for i in range( len( result)):
+            self.listGames.itemconfig( i, fg="#000", bg='#fff')
+            if result[i] == selected:
+                self.listGames.itemconfig( i, fg="#000", bg='#ddd')
+
+
+    def listTLupdate( self, currentFile=0):
+        result = self.listFile.get(0, tk.END)
+
+        if self.listFile.focus_get() is not self.listFile:
+            self.listFile.see( currentFile)
+
+        for i in range( len( result) - 1):
+            if i <= currentFile:
+                self.listFile.itemconfig( i + 1, fg="#000", bg='#ddd')
+            else:
+                self.listFile.itemconfig( i + 1, fg="#000", bg='#fff')
+
+
     def tagsCopy( self):
         self.textTag.grid( row=0, column=0, sticky='NWES', padx=5, columnspan=1)
         self.textEng.grid( row=0, column=1, sticky='NWES', padx=5)
@@ -227,10 +257,12 @@ class yoFrame( tk.Tk):
         self.stPBar.configure("lbPBar", text= "0%      ")
 
     def pbSet( self, percent=0, titleText=''):
-        percent = str( round(( percent), 2))
-        self.pbTotal['value']= percent
-        self.title( f'{percent}% [{titleText}]')
-        self.stPBar.configure("lbPBar", text= percent + "%      ")
+        percentStr = str( round(( percent), 2))
+        self.pbTotal['value']= percentStr
+        self.title( f'{percentStr}% [{titleText}]')
+        self.stPBar.configure("lbPBar", text= percentStr + "%      ")
+        if percent >= 100 and  not self.focus_get(): # is not self.textLogs:
+            mb.showinfo( "Work", 'Work complete!')
 
     def progressUpdate( self, game):
         totalLine    = game.totalLines
@@ -283,11 +315,11 @@ class yoFrame( tk.Tk):
         self.lbLines['text'] = '{:,} из {:,}'.format( 0, totalSize)
 
 
-    def print( self, line, newLine=False, lastLine=False):
+    def print( self, line, newLine=False, lastLine=False, tag=False):
         if newLine:
             self.textLogs.insert( tk.END, '[{}]\n'.format( time.strftime('%H:%M:%S')))
 
-        self.textLogs.insert( tk.END, '[{}] {}\n'.format( time.strftime('%H:%M:%S'), str( line)))
+        self.textLogs.insert( tk.END, '[{}] {}\n'.format( time.strftime('%H:%M:%S'), str( line)), tag)
         logging.info( line)
 
         if lastLine:

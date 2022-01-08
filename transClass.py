@@ -21,7 +21,7 @@ class translator:
         self.app.btnTranslate    = ttk.Button( self.app.groupFiles, text="translate start",    width=25)#, command= lambda: treatTranslate())
         self.app.btnMakeRPY      = ttk.Button( self.app.groupFiles, text="make Renpy files",   width=25)#, command= lambda: makeRPYFiles())
         # self.app.btnALL          = ttk.Button( self.app.btnPanel, text="just Translate",     width=25)#, command= makeALLFiles)
-        self.app.btnRunGame      = ttk.Button( self.app.groupFiles, text="run selected game ",    width=15)#, command= btnRunGameCllick)
+        self.app.btnRunGame      = ttk.Button( self.app.groupFiles, text="run selected game ",    width=15)#, command= btnRunGameClick)
 
         self.app.btnTLScan.grid(    row=1, column=0, sticky='NWES')
         self.app.btnMakeTemp.grid(  row=2, column=0, sticky='NWES')
