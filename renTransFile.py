@@ -2,7 +2,6 @@ import os
 import re
 import time
 import threading
-from settings import settings as set
 # import sys
 import shutil
 
@@ -10,27 +9,23 @@ import subprocess
 import tkinter as tk
 # import tkinter.ttk as ttk
 
-from unrpa import UnRPA
 from datetime import datetime
 from tkinter import messagebox as mb
 from fontTools.ttLib import TTFont
 from shutil import copytree, ignore_patterns, rmtree
 
+from settings import settings
 from guiClass import yoFrame
 from gameClass import gameRenpy
-from transClass import translator
+from transClass import translator, rpaClass
 ########################################################################################################################
 
 dictZamena  = {}
+itemDict    = {}
+
 threadSTOP  = False
 allStart    = False
-TRLEN       = 4990 # 4700 for GoogleTranslate
-
 engTRANS    = False
-testWait    = 0.1
-
-dicRPA      = {}
-itemDict    = {}
 
 reZamena = [
     '(\\[\\w+?\\])',
@@ -104,7 +99,7 @@ def clearMenuList( menuList: list, level:int) -> dict:
     return retList
 
 #todo где-то тут надо влепить ПОП вместо пересборки списка менюшек
-def checkMenuList( level=int, lines=int, line=str, menuList=dict, menuDict=list):
+def checkMenuList( level: int, lines: int, line: str, menuList: dict, menuDict: list):
     global itemDict
 
     menuList = clearMenuList( menuList, level)
@@ -175,13 +170,12 @@ def itemClearFromOld( line: str, strReplace: str) -> str:
     return strFull
 
 
-def menuFileWrite( filePath: str, fileText: list, fileShort: str):
+def menuFileWrite( filePath: str, fileText: list, fileShort: str) -> None:
     if len( itemDict[filePath]) < 2:
         return
 
     lineID = 0
     fileCopy( filePath)
-    # oprint( itemDict)
 
     tmpFile = open( f'{filePath}', 'w', encoding='utf-8')
     app.print( f'-=> [{fileShort}]')
@@ -315,67 +309,24 @@ def read_rpyc_data( ):
     app.print( f'Decompiling compete. [{good}] files done with [{bad}] errors.', False)
 
 
-def getListFilesRPA( fullScan=False):
-    global dicRPA
-
-    pathGame = game.getPathGame()
-    dicRPA = {}
+def getListFilesRPA():
     filesRPY = 0
     filesFonts = 0
 
-    if pathGame:
+    if game.getPathGame():
         fileList = game.getListFilesByExt( '.rpa')
+        archFileList = rpaArch.rpaGetFilesStats( fileList)
         app.print( '')
 
-        for fileName in fileList:
-            fileSize = os.path.getsize( fileName) / ( 1024 *1024)
+        for archFile in archFileList:
+            app.print( f'-=> [{archFile}] [{archFileList[archFile]["size"]:,.1f} mb] [{archFileList[archFile]["count"]:,} files]')
+            filesRPY += archFileList[archFile]["rpycFiles"]
+            filesFonts += archFileList[archFile]["fontsFiles"]
 
-            extractor = UnRPA( fileName)
-            archNames = extractor.list_files()
-            archNamesCount = len( archNames)
-
-            if not app.allExctract.get():
-                app.print( f"-=> [{fileList[fileName]['fileShort']}] [{fileSize:,.1f} mb] [{archNamesCount:,} files]")
-            else:
-                app.print( f'-=> [{archNamesCount:,}] files from [{fileList[fileName]["fileShort"]}] selected...')
-
-            for fileArchName in archNames:
-                if app.allExctract.get():
-                    if fileName not in dicRPA:
-                        dicRPA[fileName] = []
-                    dicRPA[fileName].append( fileArchName)
-
-                else:
-                    # if fileName.endswith( '.rpy'):
-                    # print( f'{i} - {fileName}')
-                    # filesRPY.append( fileName)
-                    # if dirName.name not in dicRPA:
-                        # dicRPA[dirName.name] = []
-                    # dicRPA[dirName.name].append(fileName)
-                    if fileArchName.endswith( '.rpyc'):
-                        if fileName not in dicRPA:
-                            dicRPA[fileName] = []
-                        dicRPA[fileName].append( fileArchName)
-
-                    elif os.path.splitext( fileArchName)[1] in extensions:
-                        if fileName not in dicRPA:
-                            dicRPA[fileName] = []
-                        dicRPA[fileName].append( fileArchName)
-
-        if not app.allExctract.get():
-            if len( dicRPA) >= 1:
-                for fileArchName in dicRPA:
-                    for fileName in dicRPA[fileArchName]:
-                        # if fileName.endswith( '.rpy'):
-                        if fileName.endswith( '.rpyc'):
-                            filesRPY += 1
-                        elif os.path.splitext( fileName)[1] in extensions:
-                            filesFonts += 1
-
-            if filesRPY >= 1:
-                app.print( f'with [{filesRPY}] RPYC files in achives.')
-            if filesFonts >= 1:
-                app.print( f'with [{filesFonts}] Fonts files in archives.')
+        if filesRPY >= 1:
+            app.print( f'with [{filesRPY}] RPYC files in achieves.')
+        if filesFonts >= 1:
+            app.print( f'with [{filesFonts}] Fonts files in archives.')
 
 
 def listFileStats( event, path=False, withTL=True, withStat=False):
@@ -384,13 +335,13 @@ def listFileStats( event, path=False, withTL=True, withStat=False):
 
     fileList = game.getListFilesByExt( ext='.rpy', gamePath=path, withTL=withTL, withStat=withStat)
 
-    app.print( f'found [{len(fileList)}] filles in [{path}]. ')
+    app.print( f'found [{len(fileList)}] files in [{path}]. ')
     app.listFileUpdate( fileList)
 
 
 def findDicReplacer( fix:str) -> str:
     fixRE =  re.findall( reFix, fix)
-    wordDic = set['wordDic']
+    wordDic = settings['wordDic']
 
     for item in fixRE:
         itemLow = item.lower()
@@ -408,7 +359,6 @@ def findDicReplacer( fix:str) -> str:
                 itemRET = wordDic[itemLow]
 
             fix = re.sub( r'(\b{}\b)'.format( item), itemRET, fix)
-
     return fix
 
 # TODO процент с цыфрой без экрана
@@ -510,15 +460,15 @@ def findTempBrackets( event):
         # fileNameTemp  = fileStat['files'][tempFile]['nameTemp']
 
         with open( fileNameTemp, 'r', encoding='utf-8') as file :
-            filedata = file.read()
+            fileData = file.read()
 
         for tempLine in dictTemp:
             if tempLine != dictTemp[tempLine]['data']:
-                dictTemp[tempLine]['count'] += filedata.count( tempLine)
-                filedata = filedata.replace( tempLine, dictTemp[tempLine]['data'] + '[123]')
+                dictTemp[tempLine]['count'] += fileData.count( tempLine)
+                fileData = fileData.replace( tempLine, dictTemp[tempLine]['data'] + '[123]')
 
         with open( fileNameTemp, 'w', encoding='utf-8') as file:
-            file.write(filedata)
+            file.write(fileData)
 
     for tempLine in dictTemp:
         app.print( ' -=> {:3} {} -=> {}'.format( dictTemp[tempLine]['count'], tempLine, dictTemp[tempLine]['data']))
@@ -546,7 +496,7 @@ def tryToTranslate( oLine, currentFileLine, file, tempFileLines, fileTransName):
 
     if app.testRun.get():
         tLine = oLine
-        time.sleep( testWait)
+        time.sleep( settings['testWait'])
     else:
         tLine = game.lineTransate( oLine, currentFileLine, file)
 
@@ -611,6 +561,7 @@ def makeTransFiles():
     app.print( f'translating start with [{app.lang.get()}] language...', True)
 
     fileList    = game.getListFilesByExt( '.rpy', game.folderTEMP, withStat=True)
+    app.listFileUpdate( fileList)
     currentSize = 0
     currentLine = 0
     game.currentFile = 0
@@ -618,7 +569,6 @@ def makeTransFiles():
     game.timeSTART = datetime.today().timestamp()
 
     for fileName in fileList:
-
         lineCount       = 0
         game.currentFile     += 1
         tempFileLines  = fileList[fileName]['lines']
@@ -626,36 +576,40 @@ def makeTransFiles():
         app.listTLupdate( game.currentFile)
         smartDirs( fileTransName)
 
-        with open( fileName, encoding='utf-8') as f:
-
-            lineTemp    = ""
-            allFile     = f.read()
-            fileAllText = allFile.split('\n')
-
-            for line in fileAllText:
-
-                if not getattr( threadSTOP, "do_run"):
-                    app.print( 'translate break.', True, True)
-                    return
-
-                lineCount    += 1
-                currentLine  += 1
-                lineSize     = len( lineTemp)
-                lineCurSize  = len( line)
-                currentSize  = currentSize + lineCurSize
-                # print( lineCount, currentSize, line)
-
-                if lineSize + lineCurSize >= TRLEN:
-                    tryToTranslate( lineTemp, lineCount, fileList[fileName]['fileShort'], tempFileLines, fileTransName)
+        for encode in settings['encList']:
+            try:
+                # print( f'TRY {encode} ENCODE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+                with open( fileName, encoding=encode) as f:
                     lineTemp    = ""
+                    allFile     = f.read()
+                    fileAllText = allFile.split('\n')
 
-                lineTemp     = lineTemp + line + '\n'
+                    for line in fileAllText:
 
-                game.currentLine = currentLine
-                game.currentSize = currentSize
+                        if not getattr( threadSTOP, "do_run"):
+                            app.print( 'translate break.', True, True)
+                            return
 
-            if len( lineTemp) > 1:
-                tryToTranslate( lineTemp, lineCount, fileList[fileName]['fileShort'], tempFileLines, fileTransName)
+                        lineCount    += 1
+                        currentLine  += 1
+                        lineSize     = len( lineTemp)
+                        lineCurSize  = len( line)
+                        currentSize  = currentSize + lineCurSize
+                        # print( lineCount, currentSize, line)
+
+                        if lineSize + lineCurSize >= settings['TRLEN']:
+                            tryToTranslate( lineTemp, lineCount, fileList[fileName]['fileShort'], tempFileLines, fileTransName)
+                            lineTemp    = ""
+
+                        lineTemp     = lineTemp + line + '\n'
+
+                        game.currentLine = currentLine
+                        game.currentSize = currentSize
+
+                    if len( lineTemp) > 1:
+                        tryToTranslate( lineTemp, lineCount, fileList[fileName]['fileShort'], tempFileLines, fileTransName)
+            except:
+                pass
 
     threadSTOP.do_run = False
     app.btnTranslate['text']    = 'translate start'
@@ -688,7 +642,7 @@ def makeRPYFiles( event):
 
         try:
             fileTemp    = open( fileNameTrans, encoding='utf-8').read()
-            linesTemp   = fileTemp.split('\n') # readlines()
+            linesTemp   = fileTemp.split('\n') # readline()
 
             with open( fileNameOrig, encoding='utf-8') as f:
                 skip01  = 0
@@ -742,7 +696,7 @@ def makeRPYFiles( event):
             # mb.showerror( 'error', f'trans file ( {fileNameTrans}) not found! make translate first.')
             # break
 
-    app.print( f"wordDic replaced {game.wordDicCount} times.")
+    app.print( f"wordDic replaced [{game.wordDicCount}] times.", tag='bold')
     # app.print( 'compile renpy files done!!!', False, True)
     copyTLStuffBack()
 
@@ -815,12 +769,9 @@ def btnRunSDKClick( event):
 
 
 def btnExtractThread( pathGame):
-    if len( dicRPA) >= 1:
-
-        for fileName in dicRPA:
-            app.print( f'Extracting from {fileName}...', True)
-            extractor = UnRPA( fileName, path=pathGame)
-            extractor.extract_files( '.', dicRPA[fileName], app)
+    fileList = game.getListFilesByExt( '.rpa')
+    dicRPA = rpaArch.rpaGetListFilesExt( fileList)
+    rpaArch.rpaExtractFiles( dicRPA, pathGame)
 
 
 def btnExtract( event):
@@ -855,13 +806,15 @@ def listGamesDClick( event):
 def main():
     global app
     global game
+    global rpaArch
 
     app = yoFrame()
     game = gameRenpy( app)
-    game.gameListScan()
+    game.gameListScan( app)
     listFileStats( app, game.folderTL)
 
     trans = translator( app, game)
+    rpaArch = rpaClass( app, game)
 
     app.listGames.bind('<Double-1>', listGamesDClick)
 
@@ -895,169 +848,8 @@ if __name__ == "__main__":
 
 
 
-
-# root= tk.Tk()
-# root.minsize( 1300, 400)
-# root.geometry("1500x600")
-
-# root.columnconfigure(0, weight=0, minsize=50)
-# root.columnconfigure(1, weight=0, minsize=50)
-# root.columnconfigure(2, weight=0, minsize=50)
-# root.columnconfigure(3, weight=1, minsize=50)
-# root.rowconfigure(   0, weight=2, pad=5)
-# root.rowconfigure(   1, weight=0, pad=5)
-
-# #######################################################################################################
-# groupGames       = tk.LabelFrame(root, padx=3, pady=3, text="Game select")
-# groupGames.grid(row=0, column=0, padx=3, pady=3, sticky='NWES')
-# groupGames.columnconfigure(0, weight=2, minsize=25)
-# groupGames.rowconfigure( 0, weight=0, pad=0)
-# groupGames.rowconfigure( 1, weight=2, pad=0)
-# groupGames.rowconfigure( 2, weight=0, pad=0)
-# groupGames.rowconfigure( 3, weight=0, pad=0)
-# groupGames.rowconfigure( 4, weight=0, pad=0)
-# groupGames.rowconfigure( 5, weight=0, pad=0)
-# groupGames.rowconfigure( 6, weight=0, pad=0)
-# groupGames.rowconfigure( 7, weight=0, pad=0)
-# groupGames.rowconfigure( 8, weight=0, pad=0)
-# groupGames.rowconfigure( 9, weight=0, pad=0)
-
-# lbGameSelected  = tk.Label(groupGames, text="None", font=10)
-# listGames       = tk.Listbox( groupGames, selectmode=tk.NORMAL, height=4, width=40, font=("Consolas", 8))
-# listGames.bind('<Double-1>', listGamesDClick)
-# btnGameRescan   = ttk.Button( groupGames, text="rescan game list",      width=15, command= gamesScan)
-# btnExtract      = ttk.Button( groupGames, text="extract rpyc/fonts",    width=15, command= buttonExtract)
-# btnDecompile    = ttk.Button( groupGames, text="decompile rpyc->rpy",   width=15, command= buttonDecompile)
-# btnRunRenpy     = ttk.Button( groupGames, text="run SDK to translate",  width=15, command= btnRunSDKClick)
-# btnFontsCopy    = ttk.Button( groupGames, text="non rus fonts + myStuff", width=15, command= scanInputFolder)
-# btnMenuFinder   = ttk.Button( groupGames, text="make menu finder",      width=15, command= findMenuStart)
-# btnCopyTL       = ttk.Button( groupGames, text="copy TL files to translate",width=15, command= copyTLStuff)
-# btnRunGame      = ttk.Button( groupGames, text="run selected game ",    width=15, command= btnRunGameClick)
-
-# lbGameSelected.grid(row=0, column=0, sticky="N", padx=3, pady=3)
-# listGames.grid(     row=1, column=0, sticky="NWES", padx=3, pady=3, columnspan=1)
-
-# btnGameRescan.grid( row=2, column=0, sticky='NWES')
-# btnExtract.grid(    row=3, column=0, sticky='NWES')
-# btnDecompile.grid(  row=4, column=0, sticky='NWES')
-# btnFontsCopy.grid(  row=5, column=0, sticky='NWES')
-# btnMenuFinder.grid( row=6, column=0, sticky='NWES')
-# btnRunRenpy.grid(   row=7, column=0, sticky='NWES')
-# btnCopyTL.grid(     row=8, column=0, sticky='NWES')
-# btnRunGame.grid(    row=9, column=0, sticky='NWES')
-
-# #######################################################################################################
-# groupFiles       = tk.LabelFrame(root, padx=3, pady=3, text="File List")
-# groupFiles.grid(row=0, column=1, padx=3, pady=3, sticky='NWES')
-# groupFiles.columnconfigure(0, weight=2, minsize=25)
-# groupFiles.rowconfigure( 0, weight=2, pad=0)
-# groupFiles.rowconfigure( 1, weight=0, pad=0)
-# groupFiles.rowconfigure( 2, weight=0, pad=0)
-
-# listFile        = tk.Listbox( groupFiles, selectmode=tk.NORMAL, height=4, width=53, font=("Consolas", 8))
-# btnTLScan       = ttk.Button( groupFiles, text="rescan tl folder",   width=15, command= lambda: rescanFolders())
-# btnMakeTemp     = ttk.Button( groupFiles, text="make temp files",    width=15, command= lambda: makeTempFiles( fileStat))
-
-# listFile.grid(      row=0, column=0, sticky="NWES", padx=5, pady=5)
-# btnTLScan.grid(     row=1, column=0, sticky='NWES')
-# btnMakeTemp.grid(   row=2, column=0, sticky='NWES')
-
-# #######################################################################################################
-# groupTags          = tk.LabelFrame(root, padx=3, pady=3, text="Tags list")
-# groupTags.grid( row=0, column=2, padx=3, pady=3, sticky='NWES')
-
-# groupTags.columnconfigure(0, weight=2, minsize=30)
-# groupTags.columnconfigure(1, weight=2, minsize=30)
-# # groupTags.columnconfigure(2, weight=2, minsize=25)
-
-# groupTags.rowconfigure(   0, weight=2, pad=0)
-# groupTags.rowconfigure(   1, weight=0, pad=0)
-
-# textTag         = tk.Text( groupTags, font=("Consolas", 8), width=31)#, state=tk.DISABLED)
-# textEng         = tk.Text( groupTags, font=("Consolas", 8), width=31)
-
-# btnTagCopy      = ttk.Button( groupTags, text=">>>>",       width=20, command= tagsCopy)
-# btnTagClear     = ttk.Button( groupTags, text="xxxx",       width=20, command= tagsClear)
-# btnTempRepl     = ttk.Button( groupTags, text="tags replace", width=20, command= lambda: findTempBrackets( fileStat))
-
-# textTag.grid( row=0, column=0, sticky='NWES', padx=5)
-# textEng.grid( row=0, column=1, sticky='NWES', padx=5, columnspan=2)
-
-# btnTagCopy.grid(  row=1, column=0, sticky='NW', padx=0, columnspan=2)
-# btnTagClear.grid( row=1, column=0, sticky='N', padx=0, columnspan=2)
-# btnTempRepl.grid( row=1, column=0, sticky='NE', columnspan=2)
-# #######################################################################################################
-
-# groupComm       = tk.LabelFrame(root, padx=3, pady=3, text="Common")
-# groupComm.grid(row=0, column=3, padx=3, pady=3, sticky='NWES')
-# groupComm.columnconfigure(0, weight=0, minsize=5)
-# groupComm.columnconfigure(1, weight=1, minsize=25)
-# groupComm.columnconfigure(2, weight=0, minsize=5)
-# groupComm.columnconfigure(3, weight=1, minsize=5)
-# groupComm.rowconfigure(   3, weight=2, pad=0)
-# groupComm.rowconfigure(   4, weight=0, pad=0)
-
-# tk.Label(groupComm, text="Закончим:").grid(row=0, sticky=tk.E)
-# tk.Label(groupComm, text="Через:"   ).grid(row=1, sticky=tk.E)
-# tk.Label(groupComm, text="Строка:"  ).grid(row=0, sticky=tk.E, column=2)
-# tk.Label(groupComm, text="Размер:"  ).grid(row=1, sticky=tk.E, column=2)
-
-# stPBar          = ttk.Style( groupComm)
-# stPBar.layout(   "lbPBar", [('lbPBar.trough', {'children': [('lbPBar.pbar', {'side': 'left', 'sticky': 'ns'}), ("lbPBar.label",   {"sticky": ""})], 'sticky': 'nswe'})])
-# stPBar.configure("lbPBar", text="0 %      ")
-
-# pbTotal         = ttk.Progressbar( groupComm, mode="determinate", length = 200, style='lbPBar')
-# textLogs        = tk.Text( groupComm, height=4, width=53, font=("Consolas", 8))
-
-# lbStart         = tk.Label(groupComm, text="")
-# lbEnd           = tk.Label(groupComm, text="")
-# lbLine          = tk.Label(groupComm, text="")
-# lbLines         = tk.Label(groupComm, text="")
-
-# lbStart.grid(   row=0, sticky=tk.W, column=1)
-# lbEnd.grid(     row=1, sticky=tk.W, column=1)
-# lbLine.grid(    row=0, sticky=tk.W, column=3)
-# lbLines.grid(   row=1, sticky=tk.W, column=3)
-
-# pbTotal.grid(   row=2, column=0, columnspan=4, sticky="NSEW")
-# textLogs.grid(  row=3, column=0, columnspan=4, sticky="NWES", padx=5, pady=5)
-
-# btnPanel = tk.Frame(groupComm, background="#99fb99")
-# btnPanel.grid( row=4, column=0, columnspan=4, sticky='NWES')
-# btnPanel.columnconfigure(0, weight=1, minsize=20)
-# btnPanel.columnconfigure(1, weight=1, minsize=20)
-# btnPanel.columnconfigure(2, weight=1, minsize=20)
-
-# btnTranslate    = ttk.Button( btnPanel, text="translate start",    width=25, command= lambda: treatTranslate())
-# btnMakeRPY      = ttk.Button( btnPanel, text="make Renpy files",   width=25, command= lambda: makeRPYFiles())
-# btnALL          = ttk.Button( btnPanel, text="just Translate",     width=25, command= makeALLFiles)
-
-# btnTranslate.grid(row=0, column=0, sticky='NWES')
-# btnMakeRPY.grid(  row=0, column=1, sticky='NWES')
-# btnALL.grid(      row=0, column=2, sticky='NWES')
-
-# #######################################################################################################
-# button1_ttp = CreateToolTip(btnTLScan,      'Делается автоматически при старте программы.\n Можно тыкать, если поменялись файлы в папке tl или просто скучно...')
-# button2_ttp = CreateToolTip(btnMakeTemp,    'Делаем временные (temp) файлы в одноименной папке.\n Можно тыкать, если поменялись файлы в папке tl или накосячили с тэгами.'\
-#                                                 ' Временные файлы создаются заново, считываясь из файлов в папке tl, ничего страшного.')
-# button3_ttp = CreateToolTip(btnTempRepl,    'Замена тэгов во временных (temp) файлах на разумный текст.\n' \
-#                                                 'Заменяем теги в квадратных скобках на свой вариант на английском (!!!) языке, для более качественного перевода, '\
-#                                                 'например "[sister]" -=> "sister" ( что на что менять ищем в коде игры или вангуем).' \
-#                                                 'Если пошло что-то не так то обновляем временные файлы предыдущей кнопкой, меняем тэги и тыкаем заново.\n' \
-#                                                 'Если не меняли, то нажимать это и не надо...\n\n' \
-#                                                 '!u - tag uppercase ("[mom!u]" = "MOM"),\n' \
-#                                                 '!l - tag lowercase ("[MOM!l]" = "mom"),\n' \
-#                                                 '!c - only first character ("[mom!c]" = "Mom")')
-# button4_ttp = CreateToolTip(btnTranslate,   'Перевод временных файлов (temp) на русский язык (transl).')
-# button5_ttp = CreateToolTip(btnMakeRPY,     'Сборка переведенных файлов (transl) в Ренпайские файлы (rpy) в папке transl.')
-# button6_ttp = CreateToolTip(btnALL,         'Одна кнопка для всего. Нажимаем - получаем. Все просто и без затей.')
-
 # sizeGrip    = ttk.Sizegrip(groupBot)
 # sizeGrip.grid( row=0, column=6, sticky=tk.SE)
-
-
-# root.after(1000, update)
-# root.mainloop()
 
 
 # return re.compile(r'\b({0})\b'.format(w), flags=re.IGNORECASE).search
@@ -1138,111 +930,3 @@ if __name__ == "__main__":
 
 # redata = re.compile(re.escape('php'), re.IGNORECASE)
 # new_text = redata.sub('php', 'PHP Exercises')
-
-# reTrans     = re.compile(r'"(.*\w+.*)"( nointeract)?$'), 0, 0
-
-        # try:
-        #     tLine = GoogleTranslator( source='auto', target='ru').translate( oLine)
-
-        # except RequestError as e:
-        #     app.print( f'-=> ERROR: {e} -=> line: {currentFileLine} ( {len( oLine)}b) at [{file}]')
-        #     logging.error( f'ERROR -=> line: {currentFileLine} ( {len(oLine)}b) at [{file}] ({e})' )
-        #     threadSTOP.do_run = False
-        #     tLine = oLine
-
-        # except Exception as error:
-        #     app.print( f'ERROR -=> line: {currentFileLine} ( {len(oLine)}b) at [{file}] ({error})' )
-        #     logging.error( f'ERROR -=> line: {currentFileLine} ( {len(oLine)}b) at [{file}] ({error})' )
-        #     # print( oLine)
-        #     tLine = oLine
-
-
-    # global fileStat
-    # fileStat  = {}
-    # dicTemp  = {}
-    # filesCur = 0
-    # fileList = game.listTLFiles()
-
-    # for filePath in fileList:                           # Находим файлы для перевода в дирректории
-
-    #     fileName = os.path.basename( filePath)
-    #     fileSize = os.path.getsize(  filePath)
-    #     fileBase, fileExt  = os.path.splitext( fileName)
-    #     filesMax = len( fileList)
-    #     filesCur += 1
-
-    #     with open( filePath, encoding='utf-8') as infile:
-    #         allFile = infile.read()
-    #         current_file_text = allFile.split('\n')
-    #         # words = 0
-    #         # characters = 0
-    #         lines = 0
-    #         linesLen = 0
-
-    #         for line in current_file_text:
-    #             lines += 1
-    #             linesLen += len( line)
-    #             # wordslist = line.split()
-    #             # words += len(wordslist)
-    #             # characters += sum(len(word) for word in wordslist)
-
-    #     i = 0
-    #     while fileName in dicTemp:                  # приписывает число к имени, если есть такой файл
-    #         i += 1
-    #         fileName = '{} ({:02}){}'.format( fileBase, i, fileExt)
-
-    #     dicTemp[fileName] = {}
-
-    #     fs = dicTemp[fileName]
-
-    #     fs['name'] = fileBase + fileExt
-    #     fs['size'] = fileSize
-    #     fs["path"] = filePath
-    #     fs['lines'] = lines
-    #     fs["chars"] = linesLen
-    #     fs['tempFLine'] = 0
-    #     fs['tempFSize'] = 0
-    #     fs['filesMax']  = filesMax
-    #     fs['nameTemp']  = f'{game.folderTEMP}/{fileName}.{extTEMP}'
-    #     fs['nameTrans'] = f'{game.folderTEMP}/{fileName}.{extTRANS}'
-    #     fs['nameRPY']   = f'{game.folderRPY}/{fileName}'
-
-    # fileStat   = { 'files': {}, 'setting': {}}
-    # listSorted = { key: dicTemp[key] for key in sorted( dicTemp)}
-
-    # for filesCur, key in enumerate( listSorted):
-    #     fileStat['files'][key] = dicTemp[key]
-    #     fileStat['files'][key]['filesCur']  = filesCur + 1
-
-    # fileStat['setting']['currentLine']  = 0
-    # fileStat['setting']['currentSize']  = 0
-    # fileStat['setting']['totalSize']    = 0
-    # fileStat['setting']['totalLine']    = 0
-    # fileStat['setting']['replCount']    = 0
-
-
-# def fileStatsUpdate():
-
-#     totalLine = 0
-#     totalSize = 0
-
-#     for fileName in fileStat['files']:
-
-#         with open( fileStat['files'][fileName]['nameTemp'], 'r', encoding='utf-8') as file :
-#             allFile = file.read()
-#             current_file_text = allFile.split('\n')
-#             lines = 0
-#             linesLen = 0
-
-#             for line in current_file_text:
-#                 lines += 1
-#                 linesLen += len( line)
-
-#             totalLine = totalLine + lines
-#             totalSize = totalSize + linesLen
-
-#             fileStat['files'][fileName]['tempFSize'] = linesLen
-#             fileStat['files'][fileName]['tempFLine'] = lines - 1
-
-#     fileStat['setting']['totalLine'] = totalLine
-#     fileStat['setting']['totalSize'] = totalSize

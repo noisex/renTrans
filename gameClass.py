@@ -2,8 +2,8 @@ import os
 import shutil
 import tkinter as tk
 # import tkinter.ttk as ttk
-from settings import settings as set
-from itertools import (takewhile,repeat)
+from settings import settings
+# from itertools import (takewhile,repeat)
 from deep_translator import GoogleTranslator
 from deep_translator.exceptions import RequestError
 
@@ -11,15 +11,15 @@ class gameRenpy():
     def __init__(self, app, *args, **kwargs):
         # tk.Tk.__init__(self, *args, **kwargs)
         self.backupFolderTemplate = 'Backup'
-        self.gameFolder     = set['gameFolder'] #'D:\\AdGames\\'
-        self.backupFolder   = set['backupFolder'] #Backup'
-        self.folderTL       = set['folderTL'] #'workFolder\\tl\\'
-        self.folderTEMP     = set['folderTEMP'] #'workFolder\\temp\\'
-        self.folderTRANS    = set['folderTRANS'] #'workFolder\\trans\\'
-        self.folderRPY      = set['folderRPY'] #'workFolder\\tl_done\\'
+        self.gameFolder     = settings['gameFolder'] #'D:\\AdGames\\'
+        self.backupFolder   = settings['backupFolder'] #Backup'
+        self.folderTL       = settings['folderTL'] #'workFolder\\tl\\'
+        self.folderTEMP     = settings['folderTEMP'] #'workFolder\\temp\\'
+        self.folderTRANS    = settings['folderTRANS'] #'workFolder\\trans\\'
+        self.folderRPY      = settings['folderRPY'] #'workFolder\\tl_done\\'
         self.rootPath       = os.path.abspath(os.getcwd()) + '\\'  # C:\GitHub\renTrans\
-        self.sdkFolder      = self.rootPath + set['sdkFolder']
-        self.fileSkip       = set['fileSkip']
+        self.sdkFolder      = self.rootPath + settings['sdkFolder']
+        self.fileSkip       = settings['fileSkip']
 
         self.app            = app
         self.gameName       = False
@@ -45,12 +45,15 @@ class gameRenpy():
 
         except RequestError as e:
             self.app.print( f'-=> ERROR: {e} -=> line: {currentFileLine} ( {len( oLine)}b) at [{file}]')
-            # threadSTOP.do_run = False
+            # print( oLine)
+            threadSTOP.do_run = False
             tLine = oLine
 
         except Exception as error:
             self.app.print( f'ERROR -=> line: {currentFileLine} ( {len(oLine)}b) at [{file}] ({error})' )
             tLine = oLine
+            # print(oLine)
+            threadSTOP.do_run = False
         return tLine
 
 
@@ -72,7 +75,7 @@ class gameRenpy():
     def makeNewBackupFolder( self):
         self.backupFolder = self.backupFolderTemplate
         i = 0
-        while os.path.exists( self.getPath()+ "\\" + self.backupFolder):                  # приписывает число к имени, если есть такой файл
+        while os.path.exists( self.getPath() + self.backupFolder):                  # приписывает число к имени, если есть такой файл
             i += 1
             self.backupFolder = '{} ({:02})'.format( self.backupFolderTemplate, i)
         # self.app.print( f'backup folder = {self.backupFolder}')
@@ -82,24 +85,35 @@ class gameRenpy():
 
 
 
-    def rawincount(self, filename):
-        f = open(filename, 'rb')
-        bufgen = takewhile(lambda x: x, (f.raw.read(1024*1024) for _ in repeat(None)))
-        return sum( buf.count(b'\n') for buf in bufgen )
+    # def rawincount(self, filename):
+    #     f = open(filename, 'rb')
+    #     bufgen = takewhile(lambda x: x, (f.raw.read(1024*1024) for _ in repeat(None)))
+    #     return sum( buf.count(b'\n') for buf in bufgen )
 
     def getFileSize( self, fileName):
         fileSize = 0
         fileLine = 0
-        with open( fileName, encoding='utf-8') as f:
-            allFile     = f.read()
-            fileAllText = allFile.split('\n')
+        for encode in settings['encList']:
+            try:
+                with open( fileName, encoding=encode) as f:
+                    for line in f.read().split('\n'):
+                        fileLine += 1
+                        fileSize += len( line)
+                    # print(encode, fileSize, fileLine)
+                    return fileSize, fileLine
+            except:
+                pass
+                # print( f' encode [{encode}] not good...')
+                # enc_list.remove(encode)
 
-            for line in fileAllText:
-                fileLine += 1
-                fileSize += len( line)
-        return fileSize, fileLine
+        # with open( fileName, encoding='utf-8') as f:
+        #     for line in f.read().split('\n'):
+        #         fileLine += 1
+        #         fileSize += len( line)
+        # return fileSize, fileLine
 
-    def getListFilesByExt( self, ext='.rpy', gamePath=False, withTL=True, withStat=False):
+    def getListFilesByExt( self, ext='.rpy', gamePath=None, withTL=True, withStat=False) -> dict:
+        """"""
         if not gamePath:
             gamePath = self.getPathGame()
 
@@ -148,13 +162,17 @@ class gameRenpy():
         # self.shortPath      = self.path
         self.shortPath      = self.gameName + '\\'
         self.app.print( f'Game: {self.gameName}', True, tag='bold')
-        if os.path.exists( self.gamePath + '/tl/rus/'):
+        if os.path.exists( self.gamePath + '\\tl\\rus\\'):
             self.app.print( '-=> with [RUS] tl folder')
-        if os.path.exists( self.gamePath + '/tl/russian/'):
+        if os.path.exists( self.gamePath + '\\tl\\russian\\'):
             self.app.print( '-=> with [RUSSIAN] tl folder')
+        if os.path.exists( self.gamePath + '\\tl\\en\\'):
+            self.app.print( '-=> with [EN] tl folder')
+        if os.path.exists( self.gamePath + '\\tl\\english\\'):
+            self.app.print( '-=> with [ENGLISH] tl folder')
 
 
-    def gameListScan( self, app=False):
+    def gameListScan( self, event):
         self.app.listGames.delete(0, tk.END)
         self.app.lbGameSelected['fg'] ='#f00'
         self.app.lbGameSelected['text'] = 'None'
@@ -164,8 +182,10 @@ class gameRenpy():
                 if dirName.is_dir() and os.path.exists( f'{self.gameFolder}{dirName.name}\\game\\') and os.path.exists( f'{self.gameFolder}{dirName.name}\\renpy\\'):
                     self.app.listGames.insert( tk.END, dirName.name)
 
+
     # TODO rewrite listwalk vs listdir
-    def clearFolder( self, fileExt='.rpy', dirName=str):
+    @staticmethod
+    def clearFolder(fileExt='.rpy', dirName= str):
         if fileExt == '*':
             shutil.rmtree( dirName)
         else:
@@ -174,15 +194,15 @@ class gameRenpy():
                 if item.endswith( fileExt):
                     os.remove(os.path.join(dirName, item))
 
-    def checkSelectedGamme( self):
+    def checkSelectedGame( self):
         if not self.gameName:
             self.app.print( 'Error with game dir. No game selected!', True)
 
     def getPathGame( self):
-        self.checkSelectedGamme( )
+        self.checkSelectedGame( )
         return self.gamePath
     def getPath( self):
-        self.checkSelectedGamme()
+        self.checkSelectedGame()
         return self.path
 
 

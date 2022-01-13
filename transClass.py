@@ -5,6 +5,8 @@ import os
 import tkinter.ttk as ttk
 from itertools import takewhile, repeat
 
+from unrpa import UnRPA
+from settings import settings
 
 class translator:
     def __init__(self, app, game) -> None:
@@ -85,6 +87,66 @@ class translator:
 
     def makeALLFiles( self, event):
         pass
+
+
+class rpaClass:
+    def __init__(self, app, game) -> None:
+        # print( '-=> Make new game', app, game)
+        self.app = app
+        self.game = game
+        self.extension = settings['extension']
+
+
+    # def setNewFileInRPA(self, fileList, fileName, size, count):
+    #     fileList[fileName] = {
+    #         'size'  : size,
+    #         'count' : count,
+    #         'files' : []
+    #     }
+    #     return  fileList
+
+
+    def rpaExtractFiles(self, fileList: dict, pathGame: str ) -> None:
+        for fileName in fileList:
+            self.app.print(f'Extracting from {fileName}...', True)
+            UnRPA(fileName, path=pathGame).extract_files('.', fileList[fileName], self.app)
+
+
+    def rpaGetListFilesExt(self, fileList:dict) -> dict:
+        dicRPA = {}
+        for fileName in fileList:
+            archNames   = UnRPA(fileName).list_files()
+
+            for fileArchName in archNames:
+                if ( self.app.allExctract.get()) or ( os.path.splitext( fileArchName)[1].lower() in self.extension):
+                    if fileName not in dicRPA:
+                        dicRPA[fileName] = []
+                    dicRPA[fileName].append( fileArchName)
+        return dicRPA
+
+
+    def rpaGetFilesStats(self, fileList:dict) -> dict:
+        dicRPA = {}
+        for fileName in fileList:
+            # shorFileName = os.path.basename( fileName)
+            archNames   = UnRPA(fileName).list_files()
+            rpycFiles   = 0
+            fontsFiles  = 0
+
+            for fileArchName in archNames:
+                extention = os.path.splitext(fileArchName)[1].lower()
+                if  extention == '.rpyc':
+                    rpycFiles += 1
+                elif extention in '.ttf, .otf':
+                    fontsFiles += 1
+
+            dicRPA[fileList[fileName]['fileName']] = {
+                'size'      : os.path.getsize(fileName) / (1024 * 1024),
+                'count'     : len(archNames),
+                'rpycFiles' : rpycFiles,
+                'fontsFiles': fontsFiles,
+            }
+        return dicRPA
 
 def main():
     pass

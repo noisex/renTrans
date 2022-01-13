@@ -29,7 +29,6 @@ class yoFrame( tk.Tk):
         logging.basicConfig(filename=logFileName, format='%(asctime)s %(message)s', datefmt='%Y.%m.%d %H:%M:%S', encoding='utf-8', level=logging.INFO)
 
         self.log     = logging
-
         self.testRun = tk.BooleanVar()
         self.testRun.set(0)
 
