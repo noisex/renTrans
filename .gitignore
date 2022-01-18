@@ -1,11 +1,7 @@
 .gitignore
 /venv/*
 /renpy-sdk/*
-/__pycache__/*
-/tl/*
-/transl/*
-/temp/*
-/tl_done/*
+*__pycache__*
 /test/*
 /.idea/*
 /logs/*

@@ -1,16 +1,35 @@
+workFolder          = 'workFolder\\'  # noqa: E221
+
 settings = {
-    'TRLEN'         : 4990, # 4700 for GoogleTranslate
-    'testWait'      : 0.1,
+    'TRLEN'         : 4990,  # 4700 for GoogleTranslate
+    'testWait'      : 0.0,
     'gameFolder'    : 'D:\\AdGames\\',
     'backupFolder'  : 'Backup',
-    'workFolder'    : 'workFolder\\',
-    'folderTL'      : 'workFolder\\tl\\',
-    'folderTEMP'    : 'workFolder\\temp\\',
-    'folderTRANS'   : 'workFolder\\trans\\',
-    'folderRPY'     : 'workFolder\\tl_done\\',
-    'sdkFolder'     : 'renpy-sdk\\',
-    'extension'     : ['.rpyc', '.ttf', '.otf'],
-    'fileSkip'      : ['gui.rpy', "common.rpy", "options.rpy", "screens.rpy", 'xxx_transparent.rpy', 'xxx_toggle_menu.rpy', 'qFont.ttf', 'webfont.ttf', 'cormac.ttf' ],
+    'workFolder'    : workFolder,  # noqa: E203
+    'folderTL'      : workFolder + 'tl\\',
+    'folderTEMP'    : workFolder + 'temp\\',
+    'folderTRANS'   : workFolder + 'trans\\',
+    'folderRPY'     : workFolder + 'tl_done\\',  # noqa: E203
+    'folderSDK'     : 'renpy-sdk\\',
+    'folderPython'  : 'lib\\windows-i686\\python.exe',
+
+    'extension': [
+        '.rpyc',
+        '.ttf',
+        '.otf'
+    ],
+
+    'fileSkip': [
+        'gui.rpy',
+        'common.rpy',
+        'options.rpy',
+        'screens.rpy',
+        'xxx_transparent.rpy',
+        'xxx_toggle_menu.rpy',
+        'qFont.ttf',
+        'webfont.ttf',
+        'cormac.ttf'
+    ],
 
     'wordDic': {
         'вереск'    : 'Хизер',
