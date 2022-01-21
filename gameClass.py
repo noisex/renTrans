@@ -1,11 +1,10 @@
 import os
 import shutil
 import tkinter as tk
+# import time
 # import tkinter.ttk as ttk
 from settings import settings
 # from itertools import (takewhile,repeat)
-from deep_translator import GoogleTranslator
-from deep_translator.exceptions import RequestError
 
 
 class GameRenpy():
@@ -27,35 +26,16 @@ class GameRenpy():
         self.path           = None
         self.gamePath       = None
         self.shortPath      = None
-        self.pathPython   = False
-        # self.fullGamePath   = False
+        self.pathPython     = None
         self.totalLines     = 0
-        self.totalSize      = 0
+        self.totalSizes     = 0
         self.totalFiles     = 0
-        self.currentLine    = 0
-        self.currentSize    = 0
-        self.currentFile    = 0
-        self.timeSTART      = 0
         self.wordDicCount   = 0
+        self.dictZamena     = {}
+        self.itemDict       = {}
+        self.threadSTOP     = {}
 
         self.makeNewDirs()
-
-    def lineTransate( self, oLine, currentFileLine='noNum', file='noFile'):
-        try:
-            tLine = GoogleTranslator( source=self.app.lang.get(), target=self.app.trans.get()).translate( oLine) + '\n'
-
-        except RequestError as e:
-            self.app.print( f'-=> ERROR: {e} -=> line: {currentFileLine} ( {len( oLine)}b) at [{file}]')
-            # print( oLine)
-            threadSTOP.do_run = False
-            tLine = oLine
-
-        except Exception as error:
-            self.app.print( f'ERROR -=> line: {currentFileLine} ( {len(oLine)}b) at [{file}] ({error})')
-            tLine = oLine
-            # print(oLine)
-            threadSTOP.do_run = False
-        return tLine
 
     def makeNewDirs( self):
         if not os.path.exists( self.folderRPY):                                   # создаем дирректорию для файлов с переводом (если нужно)
@@ -76,7 +56,7 @@ class GameRenpy():
         i = 0
         while os.path.exists( self.getPath() + self.backupFolder):                  # приписывает число к имени, если есть такой файл
             i += 1
-            self.backupFolder = '{} ({:02})'.format( self.backupFolderTemplate, i)
+            self.backupFolder = f'{self.backupFolderTemplate} ({i:02})'
         # self.app.print( f'backup folder = {self.backupFolder}')
 
     def getBackupFolder( self):
@@ -88,7 +68,7 @@ class GameRenpy():
     #     return sum( buf.count(b'\n') for buf in bufgen )
 
     @staticmethod
-    def getFileSize(fileName):
+    def getFileSize( fileName: str) -> list:
         fileSize = 0
         fileLine = 0
         for encode in settings['encList']:
@@ -99,25 +79,20 @@ class GameRenpy():
                         fileSize += len( line)
                     # print(encode, fileSize, fileLine)
                     return fileSize, fileLine
-            except (Exception,):
+            except:
                 pass
                 # print( f' encode [{encode}] not good...')
                 # enc_list.remove(encode)
-
-        # with open( fileName, encoding='utf-8') as f:
-        #     for line in f.read().split('\n'):
-        #         fileLine += 1
-        #         fileSize += len( line)
-        # return fileSize, fileLine
+        return fileSize, fileLine
 
     def getListFilesByExt( self, ext='.rpy', gamePath=None, withTL=True, withStat=False) -> dict:
-        """"""
+
         if not gamePath:
             gamePath = self.getPathGame()
 
         gamePathTemp = 'TestDirs' + 'game\\tl' if withTL else 'game\\tl'
 
-        if type( ext) == str:
+        if isinstance( ext, str):
             ext = ext.split( ', ')
 
         if withStat:
@@ -127,7 +102,7 @@ class GameRenpy():
 
         filesAll = {}
 
-        for top, dirs, files in os.walk( gamePath):                           # Находим файлы для перевода в дирректории
+        for top, _, files in os.walk( gamePath):                           # Находим файлы для перевода в дирректории
             for fileName in files:
                 if gamePathTemp not in top \
                     and ( os.path.splitext( fileName)[1] in ext or '*' in ext) \
@@ -145,7 +120,7 @@ class GameRenpy():
                         # lines   = self.rawincount( filePath)
                         size, lines     = self.getFileSize( filePath) #os.path.getsize(  filePath)
                         self.totalLines += lines
-                        self.totalSize  += size
+                        self.totalSizes += size
                         self.totalFiles += 1
                         filesAll[filePath]['lines']= lines
                         filesAll[filePath]['size'] = size
@@ -176,8 +151,8 @@ class GameRenpy():
         self.app.lbGameSelected['fg'] = '#f00'
         self.app.lbGameSelected['text'] = 'None'
 
-        with os.scandir( self.gameFolder) as list:
-            for dirName in list:
+        with os.scandir( self.gameFolder) as filLeist:
+            for dirName in filLeist:
                 if dirName.is_dir() and os.path.exists( f'{self.gameFolder}{dirName.name}\\game\\') and os.path.exists( f'{self.gameFolder}{dirName.name}\\renpy\\'):
                     self.app.listGames.insert( tk.END, dirName.name)
 

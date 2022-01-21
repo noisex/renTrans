@@ -1,18 +1,19 @@
+# "^(..[^:]*):([0-9]+):?([0-9]+)?:? (.*)$",
+# https://www.sublimetext.com/docs/build_systems.html#exec_options
+
 import os
 import re
-import time
 import threading
-# import sys
 import shutil
 
 import subprocess
 import tkinter as tk
 # import tkinter.ttk as ttk
-
 from datetime import datetime
+from shutil import ignore_patterns  # copytree, rmtree
 # from tkinter import messagebox as mb
+
 from fontTools.ttLib import TTFont
-from shutil import copytree, ignore_patterns, rmtree
 
 from settings import settings
 from guiClass import YoFrame
@@ -20,11 +21,10 @@ from gameClass import GameRenpy
 from transClass import Translator, RPAClass
 ########################################################################################################################
 
-dictZamena  = {}
-itemDict    = {}
-
-threadSTOP  = False
-engTRANS    = False
+app         = None
+game        = None
+rpaArch     = None
+trans       = None
 
 reZamena = [
     '(\\[\\w+?\\])',
@@ -36,6 +36,7 @@ reBrackets  = [
     '({.+?})',              # фигурные скобки    - {}
     '(\\%\\(.+?\\))'        # процент со скобкой - %()
 ]
+
 reFix       = re.compile(r'\b\w{3,15}\b')  # ищем слова 4+ для замены по словарю
 reTrans     = re.compile(r'"(.*[\w].*)"'), 0, 0
 
@@ -44,14 +45,13 @@ itemSize    = '{size=-5}{color=#777}'
 
 reMenu      = '\\s{4,}menu:'
 reSpace     = '\\s{4}'
-
 ########################################################################################################################
 
 
 def smartDirs( path):
     try:
         os.makedirs( os.path.dirname( path))
-    except (Exception,):
+    except:
         pass
 
 
@@ -100,15 +100,13 @@ def clearMenuList( menuList: dict, level: int) -> dict:
     return retList
 
 
-#todo где-то тут надо влепить ПОП вместо пересборки списка менюшек
+# todo где-то тут надо влепить ПОП вместо пересборки списка менюшек
 def checkMenuList( level: int, lines: int, line: str, menuList: dict, menuDict: dict):
-    global itemDict
-
     menuList = clearMenuList( menuList, level)
 
-    for menuLevel in menuList:
+    for menuLevel, mmenuValue in menuList.items():
 
-        menuID = menuList[menuLevel]
+        menuID = mmenuValue
         filePath = menuDict[menuID]['filePath']
 
         # ближе чем меню - закрываем меню
@@ -127,14 +125,14 @@ def checkMenuList( level: int, lines: int, line: str, menuList: dict, menuDict: 
             itemsStrID = menuDict[menuID]['itemsID'][-1]
 
             # если нет еще итемов на данный пункт - создать пустой
-            if itemsStrID not in itemDict[filePath]:
-                itemDict[filePath][itemsStrID] = itemSize
+            if itemsStrID not in game.itemDict[filePath]:
+                game.itemDict[filePath][itemsStrID] = itemSize
 
-            itemDict[filePath][itemsStrID] += f' ({line})'
+            game.itemDict[filePath][itemsStrID] += f' ({line})'
             # menuDict[menuID]['vars'].append( line)
             # menuDict[menuID]['items'][-1] = tList.replace( '\":', f' [{line}]\":')
-            # itemsID = list( itemDict.keys())[-1]
-            # itemDict[itemsStrID] = menuDict[menuID]['items'][-1]
+            # itemsID = list( game.itemDict.keys())[-1]
+            # game.itemDict[itemsStrID] = menuDict[menuID]['items'][-1]
             # print( f'{spacePrint(level)}{line} {tList} {menuID} {itemsID}')
 
 
@@ -154,7 +152,7 @@ def menuFileRead( filePath: str, fileText: list):
             menuID += 1
             menuList[spaceLevel] = menuID
             menuDict[menuID] = { 'id': menuID, 'itemsID': [], 'filePath': filePath}
-            #, 'level': spaceLevel, 'start': lineID, 'items': [], 'vars': []}
+            # , 'level': spaceLevel, 'start': lineID, 'items': [], 'vars': []}
 
         # если еще есть незакрытые менюхи и есть данные - анализ этой строки
         elif len( menuList) > 0 and len( line) > 0:
@@ -174,34 +172,33 @@ def itemClearFromOld( line: str, strReplace: str) -> str:
 
 
 def menuFileWrite( filePath: str, fileText: list, fileShort: str) -> None:
-    if len( itemDict[filePath]) < 2:
+    if len( game.itemDict[filePath]) < 2:
         return
 
     lineID = 0
     fileCopy( filePath)
 
-    tmpFile = open( f'{filePath}', 'w', encoding='utf-8')
-    app.print( f'-=> [{fileShort}]')
+    with open( f'{filePath}', 'w', encoding='utf-8') as f:
+        app.print( f'-=> [{fileShort}]')
 
-    for line in fileText:
-        lineID += 1
+        for line in fileText:
+            lineID += 1
 
-        if lineID in itemDict[filePath]:
+            if lineID in game.itemDict[filePath]:
 
-            if '":' in line:   # если вконце меню есть ИФ или еще что-то
-                strReplace = '":'
-            else:
-                strReplace = '" '
+                if '":' in line:   # если вконце меню есть ИФ или еще что-то
+                    strReplace = '":'
+                else:
+                    strReplace = '" '
 
-            line = itemClearFromOld( line, strReplace)
-            line = line.replace( strReplace, itemDict[filePath][lineID] + strReplace)
-            app.log.error( f'[{lineID}] = [{line.strip()}]')
+                line = itemClearFromOld( line, strReplace)
+                line = line.replace( strReplace, game.itemDict[filePath][lineID] + strReplace)
+                app.log.error( f'[{lineID}] = [{line.strip()}]')
 
-        tmpFile.write( line + '\n')
-    tmpFile.close()
+            f.write( line + '\n')
 
 
-def findMenuStart( event):
+def findMenuStart( _event):
     fileList = game.getListFilesByExt( '.rpy', False, False)
     game.makeNewBackupFolder()
     app.print( f'finding menu with variables ( backUp in [{game.backupFolder}])...', True)
@@ -209,47 +206,33 @@ def findMenuStart( event):
         with open( filePath, encoding='utf-8') as infile:
             fileText = infile.read().split('\n')
 
-        itemDict[filePath] = {}
+        game.itemDict[filePath] = {}
         menuFileRead( filePath, fileText)
         menuFileWrite( filePath, fileText, fileList[filePath]['fileShort'])
 
 ########################################################################################################################
 
 
-def copyTLStuffBack():
+def copyTLStuff( event, old=None, new=None, updateList=True):
     pathGame = game.getPathGame()
     if not pathGame:
         return
-
-    old = game.folderRPY
-    new = f'{pathGame}tl\\rus\\'
-
-    if os.path.exists( old) and os.path.exists( new):
-        game.clearFolder( '*', new)
-        shutil.copytree( old, new, dirs_exist_ok=True)
-        app.print( f'Files from [{old}] copied back to [{new}].')
-    else:
-        app.print( f'ERROR: folder [{old}] not found. {os.path.exists( new)}', True)
-
-
-def copyTLStuff( event):
-    pathGame = game.getPathGame()
-    if not pathGame:
-        return
-
-    old = f'{pathGame}tl\\rus\\'
-    new = game.folderTL
+    if not old:
+        old = f'{pathGame}tl\\rus\\'
+    if not new:
+        new = game.folderTL
 
     if os.path.exists( old) and os.path.exists( new):
         game.clearFolder( '*', new)
         shutil.copytree( old, new, dirs_exist_ok=True, ignore=ignore_patterns('*.rpyc', 'xxx_*', 'common.rpy', 'options.rpy', 'screens.rpy'))
         app.print( f'Files from [{old}] copied to [{new}].', True)
-        listFileStats( event)
+        if updateList:
+            listFileStats( event)
     else:
         app.print( f'ERROR: folder [{old}] not found. {os.path.exists( new)}', True)
 
 
-def scanInputFolder( event):
+def scanInputFolder( _event):
     pathGame = game.getPathGame()
     if not pathGame:
         return
@@ -262,17 +245,17 @@ def scanInputFolder( event):
 
     fileList = game.getListFilesByExt( '.ttf, .otf')
 
-    for fileName in fileList:
+    for fileName, fileValue in fileList.items():
         font = TTFont( fileName)
         for cmap in font['cmap'].tables:
             if cmap.isUnicode():
                 if char in cmap.cmap:
-                    app.print( f"Good font: [{fileList[fileName]['fileShort']}]")
-                    break
+                    app.print( f"Good font: [{fileValue['fileShort']}]")
+                    # break
                 else:
-                    app.print( f"Badz font: [{fileList[fileName]['fileShort']}]", tag='bold')
+                    app.print( f"Badz font: [{fileValue['fileShort']}]", tag='bold')
                     shutil.copy2( pathGame + 'webfont.ttf', fileName)  # complete target filename given
-                    break
+                break
 
 
 def decompileRPYCFiles():
@@ -321,10 +304,10 @@ def getListFilesRPA():
         archFileList = rpaArch.rpaGetFilesStats( fileList)
         app.print( '')
 
-        for archFile in archFileList:
-            app.print( f'-=> [{archFile}] [{archFileList[archFile]["size"]:,.1f} mb] [{archFileList[archFile]["count"]:,} files]')
-            filesRPY += archFileList[archFile]["rpycFiles"]
-            filesFonts += archFileList[archFile]["fontsFiles"]
+        for archFile, archValues in archFileList.items():
+            app.print( f'-=> [{archFile}] [{archValues["size"]:,.1f} mb] [{archValues["count"]:,} files]')
+            filesRPY   += archValues["rpycFiles"]
+            filesFonts += archValues["fontsFiles"]
 
         if filesRPY >= 1:
             app.print( f'with [{filesRPY}] RPYC files in achieves.')
@@ -332,7 +315,7 @@ def getListFilesRPA():
             app.print( f'with [{filesFonts}] Fonts files in archives.')
 
 
-def listFileStats( event, path=False, withTL=True, withStat=False, ext='.rpy'):
+def listFileStats( _event, path=False, withTL=True, withStat=False, ext='.rpy'):
     if not path:
         path = game.folderTL
 
@@ -349,7 +332,7 @@ def findDicReplacer( fix: str) -> str:
     for item in fixRE:
         itemLow = item.lower()
 
-        if itemLow in wordDic.keys():
+        if itemLow in wordDic:
             game.wordDicCount += 1
 
             if item == itemLow:
@@ -361,7 +344,7 @@ def findDicReplacer( fix: str) -> str:
             else:
                 itemRET = wordDic[itemLow]
 
-            fix = re.sub( r'(\b{}\b)'.format( item), itemRET, fix)
+            fix = re.sub( f'\b{item}\b', itemRET, fix)
     return fix
 
 
@@ -400,38 +383,38 @@ def findSkobki( tLine: str, oLine: str):                                      # 
 
         if tResultSC:
             oResultSC = re.findall(re_find, oLine)                          # ищем теги в скобках в переведенной строке
-            for i in range( len( oResultSC)):
+            for i, value in enumerate( oResultSC):
 
                 try:
                     if tResultSC[i] != '[123]':
-                        tLine = tLine.replace( tResultSC[i], oResultSC[i])              # заменяем переведенные кривые теги оригинальными по порядку
+                        tLine = tLine.replace( tResultSC[i], value)              # заменяем переведенные кривые теги оригинальными по порядку
                     # else:
                     #     tLine = tLine.replace( '[123]', '')
-                except (Exception,):
+                except:
                     pass
 
     return tLine.replace( '[123]', '')
 
 
-def insertZamenaInText( textBox=None, longStr=False, retList=False):
+def insertZamenaInText( textBox=None, longStr=None, retList=None):
     if textBox:
         textBox.delete( '1.0', tk.END)
     returnList = []
 
-    sorted_income = {k: dictZamena[k] for k in sorted(dictZamena)}
+    sorted_income = {k: game.dictZamena[k] for k in sorted(game.dictZamena)}
     for zamane in sorted_income:
         if retList:
-            returnList.append( dictZamena[zamane]["item"])
+            returnList.append( game.dictZamena[zamane]["item"])
         else:
             if longStr:
-                textBox.insert( tk.END, f'{dictZamena[zamane]["count"]:3}| {dictZamena[zamane]["item"]}\n')
+                textBox.insert( tk.END, f'{game.dictZamena[zamane]["count"]:3}| {game.dictZamena[zamane]["item"]}\n')
             else:
-                textBox.insert( tk.END, f'{dictZamena[zamane]["item"]}\n')
+                textBox.insert( tk.END, f'{game.dictZamena[zamane]["item"]}\n')
 
     return returnList
 
 
-def findTempBrackets( event):
+def findTempBrackets( _event):
     app.print( 'change brackets in temp files...', True)
     dictTemp    = {}
     textLine01  = insertZamenaInText( retList=True)
@@ -446,13 +429,9 @@ def findTempBrackets( event):
         if len( line) >= 1:
             try:
                 if line != textLine01[i] and len(textLine01[i]) > 1:
-                    dictTemp[textLine01[i]] = {}
-                    dictTemp[textLine01[i]]['data'] = line
-                    dictTemp[textLine01[i]]['count'] = 0
-                    # print( f' -=> {line} -=> {textLine01[i]}')
-            except (Exception,):
-                app.print( ' !!! {} -=> Skipped'.format( line))
-                pass
+                    dictTemp[textLine01[i]] = { 'data': line, 'count': 0}
+            except:
+                app.print( f'!!! {line} -=> Skipped')
 
     fileList = game.getListFilesByExt( '.rpy', game.folderTEMP)
     fileCurrent = 0
@@ -461,46 +440,40 @@ def findTempBrackets( event):
     for fileNameTemp in fileList:
         fileCurrent += 1
         app.pbSet( ( fileCurrent / fileTotal) * 100)
-
         app.listTLupdate( fileCurrent)
 
         with open( fileNameTemp, 'r', encoding='utf-8') as file:
             fileData = file.read()
 
-        for tempLine in dictTemp:
-            if tempLine != dictTemp[tempLine]['data']:
-                dictTemp[tempLine]['count'] += fileData.count( tempLine)
-                fileData = fileData.replace( tempLine, dictTemp[tempLine]['data'] + '[123]')
+        for tempLine, tempValue in dictTemp.items():
+            if tempLine != tempValue['data']:
+                tempValue['count'] += fileData.count( tempLine)
+                fileData = fileData.replace( tempLine, tempValue['data'] + '[123]')
 
         with open( fileNameTemp, 'w', encoding='utf-8') as file:
             file.write(fileData)
 
-    for tempLine in dictTemp:
-        app.print( ' -=> {:3} {} -=> {}'.format( dictTemp[tempLine]['count'], tempLine, dictTemp[tempLine]['data']))
+    for tempLine, tempValue in dictTemp.items():
+        app.print( f' -=> {tempValue["count"]:3} {tempLine} -=> {tempValue["data"]}')
 
     app.listTLupdate()
     # fileTRans['setting']['dictTemp'] = dictTemp
 
 
 def findZamena( oLine: str):
-    global dictZamena
     for reZam in reZamena:
         oResult = re.findall( reZam, oLine)
 
         if oResult:
-            for i in range( len( oResult)):
-                if oResult[i] not in dictZamena:
-                    dictZamena[oResult[i]] = { 'count': 0, 'item': ''}
-
-                dictZamena[oResult[i]]['item'] = oResult[i]              # выписываем в словарь тэги в квадратных скобках
-                dictZamena[oResult[i]]['count'] = dictZamena[oResult[i]]['count'] + 1
+            for value in oResult:
+                if value not in game.dictZamena:
+                    game.dictZamena[value] = { 'count': 0, 'item': value} # выписываем в словарь тэги в квадратных скобках
+                game.dictZamena[value]['count'] += 1
 
 
 def makeTempFiles( event):
+    game.dictZamena = {}
     game.clearFolder( '*', game.folderTEMP)
-
-    global dictZamena
-    dictZamena = {}
     app.textTag['state'] = tk.NORMAL
     fileList = game.getListFilesByExt( '.rpy', game.folderTL)
 
@@ -511,116 +484,62 @@ def makeTempFiles( event):
             tempFileName = game.folderTEMP + fileList[fileName]['fileShort']
             # print( tempFileName, game.folderTEMP, fileList[fileName]['fileShort'])
             smartDirs( tempFileName)
-            tmpFile = open( tempFileName, 'w', encoding='utf-8')
 
-            for line in fileText:
-                if r' "' in line and skip01 == 0:
-                    # skip01 = 0
-                    skip01 = 1
+            with open( tempFileName, 'w', encoding='utf-8') as f:
+                for line in fileText:
+                    if r' "' in line and skip01 == 0:
+                        # skip01 = 0
+                        skip01 = 1
 
-                    result = re.search( reTrans[0], line)
-                    if result:                            # если нашли строку с парой кавычек и это не переведенная строка ( не скип)
-                        oLine    = result.group(1)
-                        oLine    = oLine.replace( '"', "'")
-                        tmpFile.write( str( oLine) + '\n')
-                        findZamena( oLine)
-                else:
-                    skip01 = 0
-            tmpFile.close()
+                        result = re.search( reTrans[0], line)
+                        if result:                            # если нашли строку с парой кавычек и это не переведенная строка ( не скип)
+                            oLine    = result.group(1)
+                            oLine    = oLine.replace( '"', "'")
+                            f.write( str( oLine) + '\n')
+                            findZamena( oLine)
+                    else:
+                        skip01 = 0
 
-    insertZamenaInText( app.textTag, True)
+    insertZamenaInText( app.textTag, longStr=True)
     app.textTag['state'] = tk.DISABLED
     app.pbReset()
     listFileStats( event, path=game.folderTEMP, withTL=True, withStat=True)
 
 
-def tryToTranslate( oLine, currentFileLine, file, tempFileLines, fileTransName):
-    global threadSTOP
-
-    if app.testRun.get():
-        tLine = oLine
-        time.sleep( settings['testWait'])
-    else:
-        tLine = game.lineTransate( oLine, currentFileLine, file)
-
-    if tLine:
-        if tempFileLines != 0:
-            fileReadProc = ( currentFileLine / tempFileLines) * 100
-        else:
-            fileReadProc = 0
-
-        app.print( '-=> {:5}% {:2}/{} ({:4}) [{:.48}]'.format( round( fileReadProc, 1), game.currentFile, game.totalFiles, len( oLine), file))
-
-        f = open( fileTransName, 'a', encoding='utf-8')
-        f.write( tLine)
-        f.close()
-    else:
-        threadSTOP.do_run = False
-
-    app.progressUpdate(game)
-
-
-def makeTransFiles():
+def makeTransFiles():    
     game.clearFolder( '*', game.folderTRANS)
-    app.print( f'translating start with [{app.lang.get()}] language...', True)
+    app.print( f'translating from [{app.lang.get()}] to [{app.trans.get()}] language start...', True)
 
-    fileList    = game.getListFilesByExt( '*', game.folderTEMP, withStat=True)
+    fileList            = game.getListFilesByExt( '*', game.folderTEMP, withStat=True)
+    trans.currentSize   = 0
+    trans.currentLine   = 0
+    trans.currentFile   = 0
+    trans.totalFiles    = len( fileList)
+    trans.timeSTART     = datetime.today().timestamp()
     app.listFileUpdate( fileList)
-    currentSize         = 0
-    currentLine         = 0
-    game.currentFile    = 0
-    game.totalFiles     = len( fileList)
-    game.timeSTART      = datetime.today().timestamp()
 
-    for fileName in fileList:
-        app.listTLupdate(game.currentFile)
-        lineCount       = 0
-        game.currentFile += 1
-        tempFileLines   = fileList[fileName]['lines']
-        fileTransName   = game.folderTRANS + fileList[fileName]['fileShort']
+    for fileName, fileValue in fileList.items():
+        app.listTLupdate( trans.currentFile)
+        trans.currentFile += 1
+        fileTransName    = game.folderTRANS + fileValue['fileShort']
         smartDirs( fileTransName)
 
         for encode in settings['encList']:
             try:
-                # print( f'TRY {encode} ENCODE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
                 with open( fileName, encoding=encode) as f:
-                    lineTemp    = ""
                     fileAllText = f.read().split('\n')
 
-                    for line in fileAllText:
+                tList = trans.listTranslate( fileAllText, fileValue['fileShort'])
 
-                        if not getattr( threadSTOP, "do_run"):
-                            app.print( 'translate break.', True, True)
-                            return
-
-                        lineCount    += 1
-                        currentLine  += 1
-                        lineSize     = len( lineTemp)
-                        lineCurSize  = len( line)
-                        currentSize  = currentSize + lineCurSize
-                        # print( lineCount, currentSize, line)
-
-                        if lineSize + lineCurSize >= settings['TRLEN']:
-                            tryToTranslate( lineTemp, lineCount, fileList[fileName]['fileShort'], tempFileLines, fileTransName)
-                            lineTemp    = ""
-
-                        lineTemp     = lineTemp + line + '\n'
-
-                        game.currentLine = currentLine
-                        game.currentSize = currentSize
-
-                    if len( lineTemp) > 1:
-                        tryToTranslate( lineTemp, lineCount, fileList[fileName]['fileShort'], tempFileLines, fileTransName)
-            except (Exception,):
+                with open( fileTransName, 'a', encoding='utf-8') as f:
+                    for line in tList:
+                        f.write( line)
+            except:
                 pass
 
     # reset button state text
-    treatTranslate()
-
+    treatTranslate( None)
     app.listTLupdate( -1)
-    # else:
-    #     if not app.focus_get(): # is not self.textLogs:
-    #         mb.showinfo( "trans", 'make TRANS files done!')
 
 
 def makeRPYFiles( event):
@@ -629,32 +548,25 @@ def makeRPYFiles( event):
 
     game.wordDicCount = 0
     fileList = game.getListFilesByExt( '.rpy', game.folderTL)
-    # smartDirs( fileTransName)
-    for fileName in fileList:
+    for fileNameOrig in fileList:
 
         lineFoundCount  = 0
-
-        fileNameTrans   = game.folderTRANS + fileList[fileName]['fileShort']  #fileStat['files'][fileName]['nameTrans'] #'temp\\{}.transl'.format( str( fileName))
-        fileNameDone    = game.folderRPY   + fileList[fileName]['fileShort']  #fileStat['files'][fileName]['nameRPY'] #'transl\\{}'.format(str(fileName))
-        fileNameOrig    = fileName  # fileStat['files'][fileName]['path']
+        fileNameTrans   = game.folderTRANS + fileList[fileNameOrig]['fileShort']
+        fileNameDone    = game.folderRPY   + fileList[fileNameOrig]['fileShort']
         smartDirs( fileNameDone)
 
         try:
-            fileTemp    = open( fileNameTrans, encoding='utf-8').read()
-            linesTemp   = fileTemp.split('\n')  # readline()
+            with open( fileNameTrans, encoding='utf-8') as f:
+                linesTemp = f.read().split('\n')
 
             with open( fileNameOrig, encoding='utf-8') as f:
-                skip01  = 0
-                allFile = f.read()
-                fileAllText = allFile.split('\n')
+                skip01 = 0
+                fileAllText = f.read().split('\n')
 
                 for lineCount, line in enumerate( fileAllText):
-
-                    # if line.find( r' "' ) >= 1 and skip01 == 0:
                     if r' "' in line and skip01 == 0:
                         # skip01 = 0
                         skip01 = 1
-
                         result = re.search( reTrans[0], line)
 
                         if result:
@@ -665,29 +577,23 @@ def makeRPYFiles( event):
                             tLine = findDicReplacer( tLine)
                             tLine = findSkobki( tLine, oLine)                                       # заменяем теги
 
-                            if engTRANS:                                                           # если хочется иметь копию оригинальной строки внизу переведенной в игре
-                                tLine = tLine + '\\n{i}{size=-10}{color=#999}' + oLine
+                            if settings['engTRANS']:                                                 # если хочется иметь копию оригинальной строки внизу переведенной в игре
+                                tLine += settings['engLine'] + oLine
 
-                            rLine = str( line.replace( str( oLine), tLine))                           # формируем результирующую строку ( не помню почему так, а не собрать нормальную
-                            lineFoundCount = lineFoundCount + 1
+                            tLine = str( line.replace( str( oLine), tLine))                           # формируем результирующую строку ( не помню почему так, а не собрать нормальную
+                            lineFoundCount += 1
                         else:
-                            rLine = line
+                            tLine = line
 
-                        rLine = str( rLine.replace("    # ", "    "))
-                        rLine = str( rLine.replace("    old ", "    new "))
-
-                        # fileAllText[lineCount + 0] = rLine                                             # записываем ее в массив как следующую строку
-                        fileAllText[lineCount + 1] = rLine                                             # записываем ее в массив как следующую строку
+                        tLine = str( tLine.replace("    # ", "    "))
+                        tLine = str( tLine.replace("    old ", "    new "))
+                        fileAllText[lineCount + 1] = tLine                                             # записываем ее в массив как следующую строку
                     else:
                         skip01 = 0
 
-                new_rpy_tr = open( fileNameDone, 'w', encoding='utf-8')
-
-                for i in fileAllText:
-                    new_rpy_tr.write(str(i) + '\n')
-
-                # print( "make file [" + fileName + '] done')
-                new_rpy_tr.close()
+                with open( fileNameDone, 'w', encoding='utf-8') as f:
+                    for i in fileAllText:
+                        f.write(str(i) + '\n')
 
         except FileNotFoundError:
             app.print( f'Error. File [{fileNameTrans}] not found or can`t read.')
@@ -696,29 +602,30 @@ def makeRPYFiles( event):
             # break
 
     app.print( f"wordDic replaced [{game.wordDicCount}] times.", tag='bold')
-    # app.print( 'compile renpy files done!!!', False, True)
-    copyTLStuffBack()
+
+    pathGame = game.getPathGame()
+    if not pathGame:
+        return
+    copyTLStuff( event, old = game.folderRPY, new = f'{pathGame}tl\\rus\\', updateList=False)
 
 
-def treatTranslate( event=None):
-    global threadSTOP
+def treatTranslate( _event):
 
     if app.btnTranslate['text'] == 'translate start':
-        app.btnTranslate['text']    = 'translate stop'
+        app.btnTranslate['text'] = 'translate stop'
 
-        threadSTOP = threading.Thread( name='trans', target=makeTransFiles, args=( ))
-        threadSTOP.do_run = True
-        threadSTOP.start()
+        game.threadSTOP['trans'] = threading.Thread( name='trans', target=makeTransFiles, args=( ))
+        game.threadSTOP['trans'].do_run = True
+        game.threadSTOP['trans'].start()
     else:
-        app.btnTranslate['text']    = 'translate start'
+        app.btnTranslate['text'] = 'translate start'
         # t = getThreadByName('trans') #Get thread by name
-        threadSTOP.do_run = False
+        game.threadSTOP['trans'].do_run = False
 
 
 def runExternalCmd( path):
     if path and os.path.exists( path) and path.endswith( 'exe'):
         app.print( f'running [{path}]...', True)
-        # os.system( f'"{path}"')
         subprocess.call( f'"{path}"')
     else:
         app.print( f'path not found: [{path}]')
@@ -726,18 +633,17 @@ def runExternalCmd( path):
 
 def runThreadCmd( path):
     if path and os.path.exists( path):
-        # print( f'running [{path}]...', True)
-        threadRun = threading.Thread( name='run', target=runExternalCmd, args=( path,))
-        threadRun.do_run = True
-        threadRun.start()
+        game.threadSTOP['run'] = threading.Thread( name='run', target=runExternalCmd, args=( path,))
+        game.threadSTOP['run'].do_run = True
+        game.threadSTOP['run'].start()
 
 
-def btnTagsCopy( event):
+def btnTagsCopy( _event):
     insertZamenaInText( app.textEng)
     app.tagsCopy()
 
 
-def btnRunGameClick( event):
+def btnRunGameClick( _event):
     pathGame = game.getPath()
     if not pathGame:
         return
@@ -749,7 +655,7 @@ def btnRunGameClick( event):
         runThreadCmd( f'{pathGame}\\{exeName}')
 
 
-def btnRunSDKClick( event):
+def btnRunSDKClick( _event):
     runThreadCmd( f'{game.folderSDK}renpy.exe')
 
 
@@ -759,27 +665,27 @@ def btnExtractThread( pathGame):
     rpaArch.rpaExtractFiles( dicRPA, pathGame)
 
 
-def btnExtract( event):
+def btnExtract( _event):
     pathGame = game.getPathGame()
     if not pathGame:
         return
 
     app.pbReset()
-    threadRun = threading.Thread( name='run', target=btnExtractThread, args=( pathGame,))
-    threadRun.do_run = True
-    threadRun.start()
+    game.threadSTOP['run'] = threading.Thread( name='run', target=btnExtractThread, args=( pathGame,))
+    game.threadSTOP['run'].do_run = True
+    game.threadSTOP['run'].start()
 
 
-def btnDecompile( event):
+def btnDecompile( _event):
     pathGame = game.getPathGame()
     if not pathGame:
         return
 
-    threadRPY = threading.Thread(name='rpy', target=decompileRPYCFiles)  #, args=( filesRPY))
-    threadRPY.start()
+    game.threadSTOP['rpy'] = threading.Thread(name='rpy', target=decompileRPYCFiles)  #, args=( filesRPY))
+    game.threadSTOP['rpy'].start()
 
 
-def listGamesDClick( event):
+def listGamesDClick( _event):
     game.listGameDClick()
     app.gameListSet()
     getListFilesRPA()
@@ -791,14 +697,14 @@ def main():
     global app
     global game
     global rpaArch
+    global trans
 
-    app = YoFrame()
-    game = GameRenpy(app)
+    app     = YoFrame()
+    game    = GameRenpy(app)        
+    rpaArch = RPAClass(app, game)
+    trans   = Translator(app, game)
     game.gameListScan( app)
     listFileStats( app, game.folderTL)
-
-    Translator(app, game)
-    rpaArch = RPAClass(app, game)
 
     app.listGames.bind('<Double-1>', listGamesDClick)
 

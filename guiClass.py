@@ -3,11 +3,11 @@ import time
 import logging
 
 import tkinter as tk
-import tkinter.ttk as ttk
+from tkinter import ttk
+# import tkinter.ttk as ttk
 from tkinter import messagebox as mb
 
 # from toolTip import CreateToolTip
-from datetime import datetime
 
 
 class YoFrame(tk.Tk):
@@ -204,29 +204,22 @@ class YoFrame(tk.Tk):
         self.lbGameSelected['fg'] = '#00f'
         self.lbGameSelected['text'] = selected[0:25]
 
-        for i in range( len( result)):
+        for i, _ in enumerate(result):
             self.listGames.itemconfig( i, fg="#000", bg='#fff')
             if result[i] == selected:
                 self.listGames.itemconfig( i, fg="#000", bg='#ddd')
 
     def listTLupdate( self, currentFile=0):
 
-        if currentFile <= 0 or type( currentFile) != int:
+        if currentFile <= 0 or not isinstance( currentFile, int):
             result = self.listFile.get(0, tk.END)
-            for i in range(len(result)):
+            for i in range( len(result)):
                 self.listFile.itemconfig( i, fg="#000", bg='#fff')
         else:
             self.listFile.itemconfig( currentFile, fg="#000", bg='#ddd')
 
             if self.listFile.focus_get() is not self.listFile:
                 self.listFile.see(currentFile)
-
-        # for i in range( len( result) + 0):
-        #     item = max( i -1, 1)
-        #     if i <= currentFile:
-        #         self.listFile.itemconfig( item, fg="#000", bg='#ddd')
-        #     else:
-        #         self.listFile.itemconfig( item, fg="#000", bg='#fff')
 
     def tagsCopy( self):
         self.textTag.grid( row=0, column=0, sticky='NWES', padx=5, columnspan=1)
@@ -252,63 +245,62 @@ class YoFrame(tk.Tk):
                 mb.showinfo( "Work", 'Work complete!')
         return percentStr
 
-    def progressUpdate( self, game):
-        totalLine    = game.totalLines
-        totalSize    = game.totalSize
-        currentLine  = game.currentLine
-        currentSize  = game.currentSize
-        timeSTART    = game.timeSTART
-        timeNOW      = datetime.today().timestamp()
+    # def progressUpdate( self, game):
+    #     totalLine    = game.totalLines
+    #     totalSize    = game.totalSize
+    #     currentLine  = game.currentLine
+    #     currentSize  = game.currentSize
+    #     timeSTART    = game.timeSTART
+    #     timeNOW      = datetime.today().timestamp()
 
-        timeDelta    = timeNOW - timeSTART
-        timeFinish   = ( totalLine * timeDelta) / currentLine
-        timeEND      = timeSTART + timeFinish
-        timeLaps     = timeFinish - timeDelta
+    #     timeDelta    = timeNOW - timeSTART
+    #     timeFinish   = ( totalLine * timeDelta) / currentLine
+    #     timeEND      = timeSTART + timeFinish
+    #     timeLaps     = timeFinish - timeDelta
 
-        self.lbStart["text"] = datetime.fromtimestamp( timeEND).strftime( "%H:%M:%S")
-        self.lbEnd["text"]   = datetime.utcfromtimestamp( timeLaps).strftime("%Mм %Sс")
+    #     self.lbStart["text"] = datetime.fromtimestamp( timeEND).strftime( "%H:%M:%S")
+    #     self.lbEnd["text"]   = datetime.utcfromtimestamp( timeLaps).strftime("%Mм %Sс")
 
-        self.lbLine['text']  = '{:,} из {:,}'.format( currentLine, totalLine)
-        self.lbLines['text'] = '{:,} из {:,}'.format( currentSize, totalSize)
-        # percent         = str( round((( currentLine / totalLine) * 100), 2))
-        self.pbSet(( currentLine / totalLine) * 100 , f'{game.currentFile}/{game.totalFiles}')
+    #     self.lbLine['text']  = f'{currentLine:,} из {totalLine:,}'
+    #     self.lbLines['text'] = f'{currentSize:,} из {totalSize:,}'
+    #     # percent         = str( round((( currentLine / totalLine) * 100), 2))
+    #     self.pbSet(( currentLine / totalLine) * 100 , f'{game.currentFile}/{game.totalFiles}')
 
     def listFileUpdate( self, fileStat):
         i = 0
         totalSize = 0
         totalLine = 0
         self.listFile.delete(0, tk.END)
-        self.listFile.insert( tk.END, "  №|{:^25}|{:^8}|{:^6}".format( 'File', 'Size', 'Lines'))
+        self.listFile.insert( tk.END, f"  №|{'File':^25}|{'Size':^8}|{'Line':^6}")
 
-        for fileName in fileStat:
+        for _, fileValue in fileStat.items():
             i += 1
-
-            if 'lines' in fileStat[fileName]:
-                tLine = fileStat[fileName]['lines']
+            if 'lines' in fileValue:
+                tLine = fileValue['lines']
                 totalLine += tLine
             else:
                 tLine = 0
 
-            if 'size' in fileStat[fileName]:
-                tSize = fileStat[fileName]['size']
+            if 'size' in fileValue:
+                tSize = fileValue['size']
                 totalSize += tSize
             else:
                 tSize = 0
 
-            self.listFile.insert( tk.END, "{:3}|{:<25.25}|{:>8,}|{:>6}".format( i, fileStat[fileName]['fileName'], tSize, tLine))
+            self.listFile.insert( tk.END, f"{i:3}|{fileValue['fileName']:<25.25}|{tSize:>8,}|{tLine:>6}")
 
-        self.lbLine['text']  = '{:,} из {:,}'.format( 0, totalLine)
-        self.lbLines['text'] = '{:,} из {:,}'.format( 0, totalSize)
+        self.lbLine['text']  = f'{0:,} из {totalLine:,}'
+        self.lbLines['text'] = f'{0:,} из {totalSize:,}'
 
     def print( self, line, newLine=False, lastLine=False, tag=False):
         if newLine:
-            self.textLogs.insert( tk.END, '[{}]\n'.format( time.strftime('%H:%M:%S')))
+            self.textLogs.insert( tk.END, f'[{time.strftime("%H:%M:%S")}]\n')
 
-        self.textLogs.insert( tk.END, '[{}] {}\n'.format( time.strftime('%H:%M:%S'), str( line)), tag)
+        self.textLogs.insert( tk.END, f'[{time.strftime("%H:%M:%S")}] {str( line)}\n', tag)
         logging.info( line)
 
         if lastLine:
-            self.textLogs.insert( tk.END, '[{}]\n'.format( time.strftime('%H:%M:%S')))
+            self.textLogs.insert( tk.END, f'[{time.strftime("%H:%M:%S")}]\n')
 
         if self.textLogs.focus_get() is not self.textLogs:
             self.textLogs.see( tk.END)

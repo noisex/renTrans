@@ -2,7 +2,9 @@ workFolder          = 'workFolder\\'  # noqa: E221
 
 settings = {
     'TRLEN'         : 4990,  # 4700 for GoogleTranslate
-    'testWait'      : 0.0,
+    'testWait'      : 0.1,
+    'engTRANS'      : False,
+    'engLine'       : '\\n{i}{size=-3}{color=#999}',
     'gameFolder'    : 'D:\\AdGames\\',
     'backupFolder'  : 'Backup',
     'workFolder'    : workFolder,  # noqa: E203
