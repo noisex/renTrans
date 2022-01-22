@@ -20,11 +20,13 @@ from guiClass import YoFrame
 from gameClass import GameRenpy
 from transClass import Translator, RPAClass
 ########################################################################################################################
+color = "#222222"
+colors = "#2b2b2b"
 
-app         = None
-game        = None
-rpaArch     = None
-trans       = None
+# app         = None
+# game        = None
+# rpaArch     = None
+# trans       = None
 
 reZamena = [
     '(\\[\\w+?\\])',
@@ -104,9 +106,9 @@ def clearMenuList( menuList: dict, level: int) -> dict:
 def checkMenuList( level: int, lines: int, line: str, menuList: dict, menuDict: dict):
     menuList = clearMenuList( menuList, level)
 
-    for menuLevel, mmenuValue in menuList.items():
+    for menuLevel, menuValue in menuList.items():
 
-        menuID = mmenuValue
+        menuID = menuValue
         filePath = menuDict[menuID]['filePath']
 
         # ближе чем меню - закрываем меню
@@ -467,7 +469,7 @@ def findZamena( oLine: str):
         if oResult:
             for value in oResult:
                 if value not in game.dictZamena:
-                    game.dictZamena[value] = { 'count': 0, 'item': value} # выписываем в словарь тэги в квадратных скобках
+                    game.dictZamena[value] = { 'count': 0, 'item': value}  # выписываем в словарь тэги в квадратных скобках
                 game.dictZamena[value]['count'] += 1
 
 
@@ -485,7 +487,7 @@ def makeTempFiles( event):
             # print( tempFileName, game.folderTEMP, fileList[fileName]['fileShort'])
             smartDirs( tempFileName)
 
-            with open( tempFileName, 'w', encoding='utf-8') as f:
+            with open( tempFileName, 'w', encoding='utf-8') as fw:
                 for line in fileText:
                     if r' "' in line and skip01 == 0:
                         # skip01 = 0
@@ -495,7 +497,7 @@ def makeTempFiles( event):
                         if result:                            # если нашли строку с парой кавычек и это не переведенная строка ( не скип)
                             oLine    = result.group(1)
                             oLine    = oLine.replace( '"', "'")
-                            f.write( str( oLine) + '\n')
+                            fw.write( str( oLine) + '\n')
                             findZamena( oLine)
                     else:
                         skip01 = 0
@@ -606,9 +608,9 @@ def makeRPYFiles( event):
                     else:
                         skip01 = 0
 
-                with open( fileNameDone, 'w', encoding='utf-8') as f:
+                with open( fileNameDone, 'w', encoding='utf-8') as fw:
                     for i in fileAllText:
-                        f.write(str(i) + '\n')
+                        fw.write(str(i) + '\n')
 
         except FileNotFoundError:
             app.print( f'Error. File [{fileNameTrans}] not found or can`t read.')
@@ -621,7 +623,7 @@ def makeRPYFiles( event):
     pathGame = game.getPathGame()
     if not pathGame:
         return
-    copyTLStuff( event, old = game.folderRPY, new = f'{pathGame}tl\\rus\\', updateList=False)
+    copyTLStuff( event, old=game.folderRPY, new=f'{pathGame}tl\\rus\\', updateList=False)
 
 
 def runExternalCmd( path):

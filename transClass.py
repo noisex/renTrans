@@ -5,11 +5,13 @@ from datetime import datetime
 import tkinter as tk
 from tkinter import ttk
 # from itertools import takewhile, repeat
+# import threading
 
 from settings import settings
 from unrpa import UnRPA
 from deep_translator import GoogleTranslator
 from deep_translator.exceptions import RequestError
+
 
 class Translator:
     def __init__(self, app, game) -> None:
@@ -24,6 +26,8 @@ class Translator:
         # self.totalLines     = 0
         # self.totalSizes     = 0
         self.timeSTART      = 0
+        self.threadSTOP     = {}
+        # self.threadSTOP['trans'] = threading.Thread( name='trans', target=makeTransFilesList, args=( ))
 
         lbPanel = tk.Frame( self.app.groupFiles)  #, background="#99fb99")
         lbPanel.grid(row=1, column=0, sticky='NWES', columnspan=2)
@@ -59,7 +63,14 @@ class Translator:
 
     def printTransError( self, error, lineSize, lineCount, listName):
         self.app.print( f'-=> ERROR: {error} -=> line: [{lineCount}] ( {lineSize}b) at [{listName}]', tag='red')
-        self.game.threadSTOP['trans'].do_run = False
+        self.threadSTOP['trans'].do_run = False
+
+    def listTransPrepate( self, lenFileList):
+        self.currentSize   = 0
+        self.currentLine   = 0
+        self.currentFile   = 0
+        self.totalFiles    = lenFileList
+        self.timeSTART     = datetime.today().timestamp()
 
     def lineTransate( self, oLine, lineCount='noNum', listName='noListName'):
         try:
@@ -82,9 +93,10 @@ class Translator:
 
         for ind, oLine in enumerate( oList, 1):
 
-            if not getattr( self.game.threadSTOP['trans'], "do_run"):
-                self.app.print( 'translate break.', True, True)
-                return
+            if not getattr( self.threadSTOP['trans'], "do_run"):
+                self.app.print( 'translate break.', True)
+                # self.threadSTOP.stop()
+                return None
 
             lineCurSize      = len( oLine)
             lineTempSize     = len( oLineTemp)
@@ -106,6 +118,7 @@ class Translator:
 
             oLineTemp += oLine + '\n'
         return tList
+
 
 class RPAClass:
     def __init__(self, app, game) -> None:
