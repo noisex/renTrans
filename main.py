@@ -53,7 +53,7 @@ reSpace     = '\\s{4}'
 def smartDirs( path):
     try:
         os.makedirs( os.path.dirname( path))
-    except:
+    except FileExistsError:
         pass
 
 
@@ -392,7 +392,7 @@ def findSkobki( tLine: str, oLine: str):                                      # 
                         tLine = tLine.replace( tResultSC[i], value)              # заменяем переведенные кривые теги оригинальными по порядку
                     # else:
                     #     tLine = tLine.replace( '[123]', '')
-                except:
+                except RuntimeError:
                     pass
 
     return tLine.replace( '[123]', '')
@@ -424,7 +424,7 @@ def findTempBrackets( _event):
     textLine02  = texLineEng.split('\n')
 
     if len( texLineEng) <= 1:
-        app.print( ' -=> nothing to change, skiped...', False, True)
+        app.print( ' -=> nothing to change, skipped...', False, True)
         return
 
     for i, line in enumerate(textLine02):
@@ -432,8 +432,8 @@ def findTempBrackets( _event):
             try:
                 if line != textLine01[i] and len(textLine01[i]) > 1:
                     dictTemp[textLine01[i]] = { 'data': line, 'count': 0}
-            except:
-                app.print( f'!!! {line} -=> Skipped')
+            except RuntimeError as e:
+                app.print( f'!!! {line} -=> Skipped [{e}]')
 
     fileList = game.getListFilesByExt( '.rpy', game.folderTEMP)
     fileCurrent = 0
@@ -450,7 +450,7 @@ def findTempBrackets( _event):
         for tempLine, tempValue in dictTemp.items():
             if tempLine != tempValue['data']:
                 tempValue['count'] += fileData.count( tempLine)
-                fileData = fileData.replace( tempLine, tempValue['data'] + '[123]')
+                fileData = fileData.replace( tempLine, str( tempValue['data']) + '[123]')
 
         with open( fileNameTemp, 'w', encoding='utf-8') as file:
             file.write(fileData)
@@ -551,7 +551,7 @@ def makeTransFilesList():
                 else:
                     app.print( 'Error. Something going wrong...', True)
                     return
-            except:
+            except RuntimeError:
                 pass
 
     # reset button state text
