@@ -5,6 +5,7 @@ settings = {
     'testWait'      : 0.1,
     'engTRANS'      : False,
     'engLine'       : '\\n{i}{size=-3}{color=#999}',
+    'itemSize'      : '{size=-5}{color=#777}',
     'gameFolder'    : 'D:\\AdGames\\',
     'backupFolder'  : 'Backup',
     'workFolder'    : workFolder,  # noqa: E203
@@ -70,13 +71,14 @@ settings = {
     },
 
     'encList': [
-        'utf_8',
+        # 'utf_8',
         # 'cp1251',
         # 'cp1252',
 
-        # 'cp437',
-        # 'CP866',
-        # 'KOI8-R',
+        'cp437',
+        'CP866',
+        'KOI8-R',
+        'utf_8'
         # 'utf_16le',
         # 'utf_7',
         # 'bz2_codec',

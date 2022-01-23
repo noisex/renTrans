@@ -5,7 +5,6 @@ from datetime import datetime
 import tkinter as tk
 from tkinter import ttk
 # from itertools import takewhile, repeat
-# import threading
 
 from settings import settings
 from unrpa import UnRPA
@@ -37,13 +36,15 @@ class Translator:
         self.app.btnMakeTemp     = ttk.Button( lbPanel, text="make temp files")  #, command= lambda: makeTempFiles( fileStat))
         self.app.btnTranslate    = ttk.Button( lbPanel, text="translate start")  #, command= lambda: treatTranslate())
         self.app.btnMakeRPY      = ttk.Button( lbPanel, text="make Renpy files")  #, command= lambda: makeRPYFiles())
+        self.app.btnCopyRPY      = ttk.Button( lbPanel, text="copy RPY files back")  #, command= lambda: makeRPYFiles())
         self.app.btnRunGame      = ttk.Button( lbPanel, text="run selected game ")  #, command= btnRunGameClick)
 
         self.app.btnTLScan.grid(    row=0, column=0, sticky='NWES')
         self.app.btnMakeTemp.grid(  row=1, column=0, sticky='NWES')
         self.app.btnTranslate.grid( row=2, column=0, sticky='NWES')
         self.app.btnMakeRPY.grid(   row=3, column=0, sticky='NWES')
-        self.app.btnRunGame.grid(   row=4, column=0, sticky='NWES')
+        self.app.btnCopyRPY.grid(   row=4, column=0, sticky='NWES')
+        self.app.btnRunGame.grid(   row=5, column=0, sticky='NWES')
 
         # self.app.btnTranslate.bind( '<Button-1>', self.treatTranslate)
         # self.app.btnMakeRPY.bind(   '<Button-1>', self.makeRPYFiles)
@@ -65,14 +66,14 @@ class Translator:
         self.app.print( f'-=> ERROR: {error} -=> line: [{lineCount}] ( {lineSize}b) at [{listName}]', tag='red')
         self.threadSTOP['trans'].do_run = False
 
-    def listTransPrepate( self, lenFileList):
+    def listTransPrepare(self, lenFileList):
         self.currentSize   = 0
         self.currentLine   = 0
         self.currentFile   = 0
         self.totalFiles    = lenFileList
         self.timeSTART     = datetime.today().timestamp()
 
-    def lineTransate( self, oLine, lineCount='noNum', listName='noListName'):
+    def lineTransate( self, oLine, lineCount=0, listName='noListName'):
         try:
             tLine = GoogleTranslator( source=self.app.lang.get(), target=self.app.trans.get()).translate( oLine) + '\n'
 
@@ -86,7 +87,7 @@ class Translator:
 
         return tLine
 
-    def listTranslate( self, oList: list, listName: str) -> list:
+    def listTranslate( self, oList: list, listName: str) -> tuple:
         tList       = []
         oLineTemp   = ''
         oListLines  = len( oList)
@@ -96,7 +97,7 @@ class Translator:
             if not getattr( self.threadSTOP['trans'], "do_run"):
                 self.app.print( 'translate break.', True)
                 # self.threadSTOP.stop()
-                return None
+                return "Error", True
 
             lineCurSize      = len( oLine)
             lineTempSize     = len( oLineTemp)
@@ -104,7 +105,6 @@ class Translator:
             self.currentSize += lineCurSize
 
             if ( lineTempSize + lineCurSize >= settings['TRLEN']) or ( ind == oListLines):
-
                 if self.app.testRun.get():
                     time.sleep( settings['testWait'])
                 else:
@@ -117,7 +117,7 @@ class Translator:
                 self.progressUpdate()
 
             oLineTemp += oLine + '\n'
-        return tList
+        return tList, False
 
 
 class RPAClass:

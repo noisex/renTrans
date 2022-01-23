@@ -1,10 +1,7 @@
 import os
 import shutil
 import tkinter as tk
-# import time
-# import tkinter.ttk as ttk
 from settings import settings
-# from itertools import (takewhile,repeat)
 
 
 class GameRenpy():
@@ -31,7 +28,7 @@ class GameRenpy():
         self.totalSizes     = 0
         self.totalFiles     = 0
         self.wordDicCount   = 0
-        self.dictZamena     = {}
+        self.listTempTags    = {}
         self.itemDict       = {}
         self.threadSTOP     = {}
 
@@ -97,16 +94,15 @@ class GameRenpy():
 
         if withStat:
             self.totalLines = 0
-            self.totalSize  = 0
+            self.totalSizes  = 0
             self.totalFiles = 0
 
         filesAll = {}
-
         for top, _, files in os.walk( gamePath):                           # Находим файлы для перевода в дирректории
             for fileName in files:
                 if gamePathTemp not in top \
                     and ( os.path.splitext( fileName)[1] in ext or '*' in ext) \
-                    and fileName not in self.fileSkip:
+                        and fileName not in self.fileSkip:
 
                     # filePath = os.path.normpath( os.path.join( top, fileName))
                     filePath = os.path.join( top, fileName)
@@ -118,12 +114,12 @@ class GameRenpy():
 
                     if withStat:
                         # lines   = self.rawincount( filePath)
-                        size, lines     = self.getFileSize( filePath) #os.path.getsize(  filePath)
+                        size, lines     = self.getFileSize( filePath)  #os.path.getsize(  filePath)
                         self.totalLines += lines
                         self.totalSizes += size
                         self.totalFiles += 1
-                        filesAll[filePath]['lines']= lines
-                        filesAll[filePath]['size'] = size
+                        filesAll[filePath]['lines'] = lines
+                        filesAll[filePath]['size']  = size
         # print( dict(sorted(filesAll.items())))
         # print( filesAll)
         self.app.print( f'found [{len( filesAll)}] {ext} files in [{gamePath}] folder.')
@@ -146,13 +142,13 @@ class GameRenpy():
         if os.path.exists( self.gamePath + '\\tl\\english\\'):
             self.app.print( '-=> with [ENGLISH] tl folder')
 
-    def gameListScan( self, event):
+    def gameListScan( self, _event):
         self.app.listGames.delete(0, tk.END)
         self.app.lbGameSelected['fg'] = '#f00'
         self.app.lbGameSelected['text'] = 'None'
 
-        with os.scandir( self.gameFolder) as filLeist:
-            for dirName in filLeist:
+        with os.scandir( self.gameFolder) as fileList:
+            for dirName in fileList:
                 if dirName.is_dir() and os.path.exists( f'{self.gameFolder}{dirName.name}\\game\\') and os.path.exists( f'{self.gameFolder}{dirName.name}\\renpy\\'):
                     self.app.listGames.insert( tk.END, dirName.name)
 
