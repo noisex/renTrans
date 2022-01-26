@@ -13,6 +13,7 @@ settings = {
     'folderTEMP'    : workFolder + 'temp\\',
     'folderTRANS'   : workFolder + 'trans\\',
     'folderRPY'     : workFolder + 'tl_done\\',  # noqa: E203
+    'folderLOGS'    : 'logs\\',
     'folderSDK'     : 'renpy-sdk\\',
     'folderPython'  : 'lib\\windows-i686\\python.exe',
 

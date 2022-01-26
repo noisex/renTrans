@@ -39,8 +39,7 @@ reSpace     = '\\s{4}'
 
 def stringLevel( oLine: str) -> int:
     """back indent level of current line"""
-    spaceResult = re.findall( reSpace, oLine)
-    return len(spaceResult)
+    return len( re.findall( reSpace, oLine))
 
 
 def clearItem( line: str) -> str:
@@ -117,7 +116,9 @@ def menuFileRead( filePath: str, fileText: list):
             checkMenuList( spaceLevel, lineID, line, menuList, menuDict)
 
 
-# todo Партишн строки на 3 части # x = txt.partition("eat") If the specified value is not found, the rpartition() method returns a tuple containing: 1 - an empty string, 2 - an empty string, 3 - the whole string:
+# todo Партишн строки на 3 части # x = txt.partition("eat")
+# If the specified value is not found, the rpartition() method returns a tuple containing: 1 - an empty string, 2 - an empty string, 3 - the whole string:
+# не катит, так как я не знаю конец добавленной строки, только если регуляркой вырезаьть
 def itemClearFromOld( line: str, strReplace: str) -> str:
     """очищаем строку от добавленных ранее подсказок"""
     itemStart = line.find( settings['itemSize'])
@@ -126,7 +127,6 @@ def itemClearFromOld( line: str, strReplace: str) -> str:
         strFull = line[0:itemStart] + line[itemEnd:]
     else:
         strFull = line
-
     return strFull
 
 
@@ -326,7 +326,7 @@ def wordDicReplacer(fix: str) -> str:
             else:
                 itemRET = wordDic[itemLow]
 
-            fix = re.sub( f'\b{item}\b', itemRET, fix)
+            fix = re.sub( fr'\b{item}\b', itemRET, fix)
     return fix
 
 
@@ -345,7 +345,7 @@ def correctTranslate(fix):                                                 # к�
     fix = re.sub( r'(\d+)\W*%', r'\1\%', fix)                                   # 123% => 123\%
 
     fix = fix.replace( '\\"', '\'')
-    fix = fix.replace( '"', '\'')
+    fix = fix.replace( '\"', '\'')
     fix = fix.replace( '% (', ' %(')
     fix = fix.replace( '} ', '}')
     # fix = fix.replace( ' {/', '{/')
@@ -599,7 +599,7 @@ def btnRunGameClick( _event):
     exeName = sorted( list( filter(lambda fileName: fileName.endswith('.exe'), exeName)))[-1]
 
     if exeName and len( exeName) > 1:
-        runThreadCmd( f'{pathGame}\\{exeName}')
+        runThreadCmd( f'{pathGame}{exeName}')
 
 
 def btnRunSDKClick( _event):
