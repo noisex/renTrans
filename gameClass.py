@@ -14,6 +14,7 @@ class GameRenpy():
         self.folderTEMP     = settings['folderTEMP']  #'workFolder\\temp\\'
         self.folderTRANS    = settings['folderTRANS']  #'workFolder\\trans\\'
         self.folderRPY      = settings['folderRPY']  #'workFolder\\tl_done\\'
+        # self.folderLOGS     = settings['folderLOGS']
         self.rootPath       = os.path.abspath(os.getcwd()) + '\\'  # C:\GitHub\renTrans\
         self.folderSDK      = self.rootPath + settings['folderSDK']  # noqa: E221
         self.fileSkip       = settings['fileSkip']
@@ -47,6 +48,9 @@ class GameRenpy():
         if not os.path.exists( self.folderTRANS):                                       # создаем дирректорию для файлов с переводом (если нужно)
             os.mkdir( self.folderTRANS)
             self.app.print( f'Папка {self.folderTRANS} - она просто нужна...')
+        # if not os.path.exists( self.folderLOGS):                                       # создаем дирректорию для файлов с переводом (если нужно)
+        #     os.mkdir( self.folderLOGS)
+        #     self.app.print( f'Папка {self.folderLOGS} - какие-то логи...')
 
     def makeNewBackupFolder( self):
         self.backupFolder = self.backupFolderTemplate
