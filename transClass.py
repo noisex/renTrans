@@ -2,7 +2,7 @@ import os
 import time
 from datetime import datetime
 # from itertools import (takewhile,repeat)
-import tkinter as tk
+# import tkinter as tk
 from tkinter import ttk
 # from itertools import takewhile, repeat
 
@@ -28,16 +28,16 @@ class Translator:
         self.threadSTOP     = {}
         # self.threadSTOP['trans'] = threading.Thread( name='trans', target=makeTransFilesList, args=( ))
 
-        lbPanel = tk.Frame( self.app.groupFiles)  #, background="#99fb99")
+        lbPanel                 = ttk.Frame( self.app.groupFiles)  #, background="#99fb99")
         lbPanel.grid(row=1, column=0, sticky='NWES', columnspan=2)
         lbPanel.columnconfigure(0, weight=2, minsize=10)
 
-        self.app.btnTLScan       = ttk.Button( lbPanel, text="rescan tl folder")  #, command= lambda: rescanFolders())
-        self.app.btnMakeTemp     = ttk.Button( lbPanel, text="make temp files")  #, command= lambda: makeTempFiles( fileStat))
-        self.app.btnTranslate    = ttk.Button( lbPanel, text="translate start")  #, command= lambda: treatTranslate())
-        self.app.btnMakeRPY      = ttk.Button( lbPanel, text="make Renpy files")  #, command= lambda: makeRPYFiles())
-        self.app.btnCopyRPY      = ttk.Button( lbPanel, text="copy RPY files back")  #, command= lambda: makeRPYFiles())
-        self.app.btnRunGame      = ttk.Button( lbPanel, text="run selected game ")  #, command= btnRunGameClick)
+        self.app.btnTLScan      = ttk.Button( lbPanel, text="rescan tl folder")  #, command= lambda: rescanFolders())
+        self.app.btnMakeTemp    = ttk.Button( lbPanel, text="make temp files")  #, command= lambda: makeTempFiles( fileStat))
+        self.app.btnTranslate   = ttk.Button( lbPanel, text="translate start")  #, command= lambda: treatTranslate())
+        self.app.btnMakeRPY     = ttk.Button( lbPanel, text="make Renpy files")  #, command= lambda: makeRPYFiles())
+        self.app.btnCopyRPY     = ttk.Button( lbPanel, text="copy RPY files back")  #, command= lambda: makeRPYFiles())
+        self.app.btnRunGame     = ttk.Button( lbPanel, text="run selected game ")  #, command= btnRunGameClick)
 
         self.app.btnTLScan.grid(    row=0, column=0, sticky='NWES')
         self.app.btnMakeTemp.grid(  row=1, column=0, sticky='NWES')
@@ -75,7 +75,7 @@ class Translator:
 
     def lineTransate( self, oLine, lineCount=0, listName='noListName'):
         try:
-            tLine = GoogleTranslator( source=self.app.lang.get(), target=self.app.trans.get()).translate( oLine) + '\n'
+            tLine = GoogleTranslator( source=self.app.optLang.get(), target=self.app.optTrans.get()).translate( oLine)  #+ '\n'
 
         except RequestError as error:
             self.printTransError( error, len( oLine), lineCount, listName)
@@ -96,7 +96,6 @@ class Translator:
 
             if not getattr( self.threadSTOP['trans'], "do_run"):
                 self.app.print( 'translate break.', True)
-                # self.threadSTOP.stop()
                 return "Error", True
 
             lineCurSize      = len( oLine)
