@@ -5,7 +5,7 @@ from settings import settings
 
 
 class GameRenpy():
-    def __init__(self, app, *args, **kwargs):
+    def __init__(self, app):
         # tk.Tk.__init__(self, *args, **kwargs)
         self.app = app
         self.gameName = None

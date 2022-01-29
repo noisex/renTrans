@@ -147,6 +147,8 @@ class YoFrame(tk.Tk):
         self.rowconfigure(   1, weight=0, pad=5)
 
         #######################################################################################################
+        #                                           1
+        #######################################################################################################
         groupGames = tk.LabelFrame(self, padx=3, pady=3, text="Game select")
         groupGames.grid(row=0, column=0, padx=3, pady=3, sticky='NWES')
         groupGames.columnconfigure(0, weight=2, minsize=25)
@@ -161,7 +163,8 @@ class YoFrame(tk.Tk):
         self.btnRunRenpy     = ttk.Button(   groupGames, text="run SDK to translate")  #, command= btnRunSDKClick)
         self.btnFontsCopy    = ttk.Button(   groupGames, text="non rus fonts + myStuff")  #, command= scanInputFolder)
         self.btnMenuFinder   = ttk.Button(   groupGames, text="make menu finder")  #, command= findMenuStart)
-        self.btnCopyTL       = ttk.Button(   groupGames, text="copy TL files to translate")  #, command= copyTLStuff)
+        self.btnCopyTL       = ttk.Button(   groupGames, text="copy tl files to translate")  #, command= copyTLStuff)
+        self.btnWordDic      = ttk.Button(   groupGames, text="word dic in tl folder")  # , command= lambda: makeRPYFiles())
 
         self.lbGameSelected.grid(row=0, column=0, sticky="N", padx=3, pady=3)
         self.cbGameFolder.grid(  row=1, column=0, sticky='NWES', padx=3, pady=3)
@@ -173,22 +176,44 @@ class YoFrame(tk.Tk):
         self.btnMenuFinder.grid( row=7, column=0, sticky='NWES')
         self.btnRunRenpy.grid(   row=8, column=0, sticky='NWES')
         self.btnCopyTL.grid(     row=9, column=0, sticky='NWES')
+        self.btnWordDic.grid(    row=10, column=0, sticky='NWES')
 
         self.lbGameSelected.configure( font=('Microsoft JhengHei UI', 12))
         #######################################################################################################
-        self.groupFiles = tk.LabelFrame(self, padx=3, pady=3, text="File List")
-        self.groupFiles.grid(row=0, column=1, padx=3, pady=3, sticky='NWES')
-        self.groupFiles.columnconfigure(0, weight=2, minsize=25)
-        self.groupFiles.rowconfigure( 0, weight=2, pad=0)
+        #                                           2
+        #######################################################################################################
+        groupFiles = tk.LabelFrame(self, padx=3, pady=3, text="File List")
+        groupFiles.grid(row=0, column=1, padx=3, pady=3, sticky='NWES')
+        groupFiles.columnconfigure(0, weight=2, minsize=25)
+        groupFiles.rowconfigure( 0, weight=2, pad=0)
 
-        self.listFileSCy    = ttk.Scrollbar(self.groupFiles, orient=tk.VERTICAL)
-        self.listFile       = tk.Listbox(  self.groupFiles, selectmode=tk.NORMAL, height=4, width=45, font=("Consolas", 8), yscrollcommand=self.listFileSCy.set)
+        self.listFileSCy    = ttk.Scrollbar(groupFiles, orient=tk.VERTICAL)
+        self.listFile       = tk.Listbox(   groupFiles, selectmode=tk.NORMAL, height=4, width=45, font=("Consolas", 8), yscrollcommand=self.listFileSCy.set)
 
         self.listFile.grid(    row=0, column=0, sticky="NWES", padx=5, pady=5)
         self.listFileSCy.grid( row=0, column=1, sticky="NS")
-
         self.listFileSCy.config(command=self.listFile.yview)
 
+        lbPanel = ttk.Frame( groupFiles)  # , background="#99fb99")
+        lbPanel.grid(row=1, column=0, sticky='NWES', columnspan=2)
+        lbPanel.columnconfigure(0, weight=2, minsize=10)
+
+        self.btnTLScan      = ttk.Button(lbPanel, text="rescan tl folder")  # , command= lambda: rescanFolders())
+        self.btnMakeTemp    = ttk.Button(lbPanel, text="make temp files")  # , command= lambda: makeTempFiles( fileStat))
+        self.btnTranslate   = ttk.Button(lbPanel, text="translate temp files")  # , command= lambda: treatTranslate())
+        self.btnMakeRPY     = ttk.Button(lbPanel, text="make renpy files")  # , command= lambda: makeRPYFiles())
+        self.btnCopyRPY     = ttk.Button(lbPanel, text="copy renpy files back")  # , command= lambda: makeRPYFiles())
+        self.btnRunGame     = ttk.Button(lbPanel, text="run selected game ")  # , command= btnRunGameClick)
+
+        self.btnTLScan.grid(   row=0, column=0, sticky='NWES')
+        self.btnMakeTemp.grid( row=1, column=0, sticky='NWES')
+        self.btnTranslate.grid(row=2, column=0, sticky='NWES')
+        self.btnMakeRPY.grid(  row=3, column=0, sticky='NWES')
+        self.btnCopyRPY.grid(  row=4, column=0, sticky='NWES')
+        self.btnRunGame.grid(  row=5, column=0, sticky='NWES')
+
+        #######################################################################################################
+        #                                           3
         #######################################################################################################
         groupTags = tk.LabelFrame(self, padx=3, pady=3, text="Tags list", width=15)
         groupTags.grid( row=0, column=2, padx=3, pady=3, sticky='NWES')
@@ -214,8 +239,10 @@ class YoFrame(tk.Tk):
         self.btnTagCopy.grid(  row=0, column=0, sticky='NWES', padx=0)
         self.btnTagClear.grid( row=1, column=0, sticky='NWES', padx=0)
         self.btnTempRepl.grid( row=2, column=0, sticky='NWES', padx=0)
-        #######################################################################################################
 
+        #######################################################################################################
+        #                                           4
+        #######################################################################################################
         groupComm       = tk.LabelFrame(self, text="Common", padx=3, pady=3)
         # groupComm       = ttk.LabelFrame(self, padx=3, pady=3, text="Common")
         groupComm.grid(row=0, column=3, padx=3, pady=3, sticky='NWES')
@@ -271,8 +298,10 @@ class YoFrame(tk.Tk):
         self.textLogs.grid(  row=2, column=0, sticky="NWSE", padx=5, pady=5)
         self.textLogsSCy.grid( row=2, column=1, sticky="NS")
         self.textLogsSCy.config(command=self.textLogs.yview)
-        ################################################################################################################
 
+        #######################################################################################################
+        #                                                   style
+        #######################################################################################################
         myGreay = '#e1e1e1'
         myBlack = '#292929'
         myRed = 'red'
@@ -284,11 +313,11 @@ class YoFrame(tk.Tk):
         groupComm['bg']       = myGreay
         groupTags['bg']       = myGreay
         groupGames['bg']      = myGreay
-        self.groupFiles['bg'] = myGreay
+        groupFiles['bg'] = myGreay
         groupComm['fg']       = myBlack
         groupTags['fg']       = myBlack
         groupGames['fg']      = myBlack
-        self.groupFiles['fg'] = myBlack
+        groupFiles['fg'] = myBlack
 
         # self.textLogs['bg'] = myGreay
         self.textTag['bg'] = myGreay
@@ -417,7 +446,7 @@ class YoFrame(tk.Tk):
             self.update()
             self.after(1000, self.updateUI)
         except KeyboardInterrupt:
-            print('wwwwww')
+            print('error')
             self.destroy()
 
 

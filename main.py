@@ -155,14 +155,14 @@ def menuFileWrite(fileName: str, fileText: list, fileShort: str) -> None:
 
 # reTest = re.compile( r'\s{4}"(.+?)".*:\s*$')
 
-
+#  todo check items before wtite and print result
 def btnMenuFindVars(_event):
     pathGame = game.getPathGame()
     if not pathGame:
         return
-    fileList = game.getListFilesByExt( '.rpy', False, False)
+    fileList = game.getListFilesByExt( '.rpy', False, False, silent=True)
     game.makeNewBackupFolder()
-    app.print( f'finding menu with variables ( backUp in [{game.backupFolder}])...', True)
+    app.print( f'finding menu with variables ( backUp in [{game.backupFolder}])...')
     for fileName, fileValue in fileList.items():
         fileText, error = readFileToList( fileName)
 
@@ -229,11 +229,11 @@ def copyTLStuff( event, old=None, new=None, updateList=True):
     if os.path.exists( old) and os.path.exists( new):
         game.clearFolder( '*', new)
         shutil.copytree( old, new, dirs_exist_ok=True, ignore=ignore_patterns('*.rpyc', 'xxx_*', 'common.rpy', 'options.rpy', 'screens.rpy'))
-        app.print( f'Files from [{old}] copied to [{new}].', True)
+        app.print( f'Files from [{old}] copied to [{new}].')
         if updateList:
             listFileStats( event)
     else:
-        app.print( f'ERROR: folder [{old}] not found. {os.path.exists( new)}', True)
+        app.print( f'ERROR: folder [{old}] not found. {os.path.exists( new)}')
 
 
 def copyFontsAndStuff(_event):
@@ -292,7 +292,7 @@ def listFileStats( _event, path=False, withTL=True, withStat=False, ext='.rpy'):
     app.listFileUpdate( fileList)
 
 
-def wordDicReplacer(fix: str) -> str:
+def wordDicReplacer(fix: str, fileName: str) -> str:
     fixRE   = re.findall( reFix, fix)
     wordDic = settings['wordDic']
 
@@ -312,6 +312,7 @@ def wordDicReplacer(fix: str) -> str:
                 itemRET = wordDic[itemLow]
 
             fix = re.sub( fr'\b{item}\b', itemRET, fix)
+            app.log.error(f' wordDic: [{fileName}] = [{ fix.strip()}]')
     return fix
 
 
@@ -420,7 +421,7 @@ def btnTagsChange(_event):
             file.write(fileData)
 
     if len( dictTemp) >= 1:
-        app.print('Change brackets tags in temp files...', True)
+        app.print('Change brackets tags in temp files...')
         for tempLine, tempValue in dictTemp.items():
             app.print( f'-=> {tempValue["count"]:3} {tempLine} -=> {tempValue["data"]}')
     else:
@@ -469,20 +470,7 @@ def btnMakeTempFiles(event):
     listFileStats( event, path=game.folderTEMP, withTL=True, withStat=True)
 
 
-def btnMakeTransFilesThread(_event):
-    # if app.btnTranslate['text'] == 'translate start':
-    if ( 'trans' not in trans.threadSTOP) or ( not getattr( trans.threadSTOP['trans'], "do_run")):
-        app.btnTranslate['text'] = 'translate stop'
-        trans.threadSTOP['trans'] = threading.Thread(name='trans', target=btnMakeTransFiles, args=( ))
-        trans.threadSTOP['trans'].do_run = True
-        trans.threadSTOP['trans'].start()
-    else:
-        app.btnTranslate['text'] = 'translate start'
-        # t = getThreadByName('trans') #Get thread by name
-        trans.threadSTOP['trans'].do_run = False
-
-
-def btnMakeTransFiles():
+def btnMakeTransFilesThread():
     game.clearFolder( '*', game.folderTRANS)
     app.print( f'translating from [`green`{app.lang.get()}`] to [`green`{app.trans.get()}`] language start...', True)
 
@@ -503,11 +491,24 @@ def btnMakeTransFiles():
             if not error:
                 writeListToFile( game.folderTRANS + fileValue['fileShort'], tList)
             else:
-                app.print( 'Error. Something going wrong...', True)
+                app.print( 'Error. Something going wrong...')
                 return
     # reset button state text
-    btnMakeTransFilesThread(None)
+    btnMakeTransFiles( False)
     app.listTLupdate( -1)
+
+
+def btnMakeTransFiles(_event):
+    # if app.btnTranslate['text'] == 'translate start':
+    if ( 'trans' not in trans.threadSTOP) or ( not getattr( trans.threadSTOP['trans'], "do_run")):
+        app.btnTranslate['text'] = 'translate stop'
+        trans.threadSTOP['trans'] = threading.Thread(name='trans', target=btnMakeTransFilesThread, args=( ))
+        trans.threadSTOP['trans'].do_run = True
+        trans.threadSTOP['trans'].start()
+    else:
+        app.btnTranslate['text'] = 'translate start'
+        # t = getThreadByName('trans') #Get thread by name
+        trans.threadSTOP['trans'].do_run = False
 
 
 def btnMakeRPYFiles(_event):
@@ -533,7 +534,7 @@ def btnMakeRPYFiles(_event):
                         oLine = result.group(1)
                         tLine = linesTranslated[lineFoundCount]
                         tLine = correctTranslate(tLine)
-                        tLine = wordDicReplacer(tLine)
+                        tLine = wordDicReplacer(tLine, fileList[fileNameOrig]['fileShort'])
                         tLine = correctBrackets(tLine, oLine)                                       # заменяем теги
 
                         if settings['engTRANS']:                                                 # если хочется иметь копию оригинальной строки внизу переведенной в игре
@@ -560,7 +561,7 @@ def btnMakeRPYFiles(_event):
 
 def runExternalCmd( path):
     if path and os.path.exists( path) and path.endswith( 'exe'):
-        app.print( f'running [`bold`{path}`]...', True)
+        app.print( f'running [`bold`{path}`]...')
         subprocess.call( f'"{path}"')
     else:
         app.print( f'path not found: [{path}]')
@@ -590,6 +591,7 @@ def btnRunGameClick( _event):
         runThreadCmd( f'{pathGame}{exeName}')
 
 
+#  todo clear tl folder before
 def btnRunSDKClick( _event):
     runThreadCmd( f'{game.folderSDK}renpy.exe')
 
@@ -661,6 +663,27 @@ def btnCopyRPYBack( event):
     copyTLStuff(event, old=game.folderRPY, new=f'{pathGame}tl\\rus\\', updateList=False)
 
 
+def btnWordDicClick( _event):
+    pathGame = game.getPathGame()
+    if not pathGame:
+        return
+    app.print( "")
+    fileList = game.getListFilesByExt( gamePath=game.gamePath)  # + 'tl\\rus\\')
+    game.wordDicCount = 0
+
+    for fileName in fileList:
+        tempList = []
+        wordCountLocal = game.wordDicCount
+        fileLines, error = readFileToList( fileName)
+        for line in fileLines:
+            if ( '"' in line) and ( '    #' not in line):
+                line = wordDicReplacer( line, fileList[fileName]['fileShort'])
+            tempList.append( line)
+        if game.wordDicCount != wordCountLocal:
+            writeListToFile( fileName, tempList)
+    app.print( f"wordDic replaced [`green`{game.wordDicCount}`] times.")
+
+
 def listGamesDClick( _event):
     game.listGameDClick()
     app.gameNameLabelSet()
@@ -685,9 +708,10 @@ def main():
 
     app.btnTLScan.bind(     '<ButtonRelease-1>', listFileStats)
     app.btnMakeTemp.bind(   '<ButtonRelease-1>', btnMakeTempFiles)
-    app.btnTranslate.bind(  '<ButtonRelease-1>', btnMakeTransFilesThread)
+    app.btnTranslate.bind(  '<ButtonRelease-1>', btnMakeTransFiles)
     app.btnMakeRPY.bind(    '<ButtonRelease-1>', btnMakeRPYFiles)
     app.btnCopyRPY.bind(    '<ButtonRelease-1>', btnCopyRPYBack)
+    app.btnWordDic.bind(    '<ButtonRelease-1>', btnWordDicClick)
     app.btnRunGame.bind(    '<ButtonRelease-1>', btnRunGameClick)
 
     app.btnTagCopy.bind(    '<ButtonRelease-1>', btnTagsCopy)

@@ -2,8 +2,6 @@ import os
 import time
 from datetime import datetime
 # from itertools import (takewhile,repeat)
-# import tkinter as tk
-from tkinter import ttk
 # from itertools import takewhile, repeat
 
 from settings import settings
@@ -23,24 +21,6 @@ class Translator:
         self.totalFiles     = 0
         self.timeSTART      = 0
         self.threadSTOP     = {}
-
-        lbPanel                 = ttk.Frame( self.app.groupFiles)  #, background="#99fb99")
-        lbPanel.grid(row=1, column=0, sticky='NWES', columnspan=2)
-        lbPanel.columnconfigure(0, weight=2, minsize=10)
-
-        self.app.btnTLScan      = ttk.Button( lbPanel, text="rescan tl folder")  #, command= lambda: rescanFolders())
-        self.app.btnMakeTemp    = ttk.Button( lbPanel, text="make temp files")  #, command= lambda: makeTempFiles( fileStat))
-        self.app.btnTranslate   = ttk.Button( lbPanel, text="translate start")  #, command= lambda: treatTranslate())
-        self.app.btnMakeRPY     = ttk.Button( lbPanel, text="make Renpy files")  #, command= lambda: makeRPYFiles())
-        self.app.btnCopyRPY     = ttk.Button( lbPanel, text="copy RPY files back")  #, command= lambda: makeRPYFiles())
-        self.app.btnRunGame     = ttk.Button( lbPanel, text="run selected game ")  #, command= btnRunGameClick)
-
-        self.app.btnTLScan.grid(    row=0, column=0, sticky='NWES')
-        self.app.btnMakeTemp.grid(  row=1, column=0, sticky='NWES')
-        self.app.btnTranslate.grid( row=2, column=0, sticky='NWES')
-        self.app.btnMakeRPY.grid(   row=3, column=0, sticky='NWES')
-        self.app.btnCopyRPY.grid(   row=4, column=0, sticky='NWES')
-        self.app.btnRunGame.grid(   row=5, column=0, sticky='NWES')
 
     def progressUpdate( self):
         timeDelta    = datetime.today().timestamp() - self.timeSTART
