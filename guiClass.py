@@ -8,15 +8,37 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox as mb
 from settings import settings
-# from toolTip import CreateToolTip
+
+myBlack = '#292929'
+myGreay = '#e1e1e1'
+myRed   = 'red'
+myBrown = '#bbb'
+
+
+class YoButton( ttk.Button):
+    _frames = []
+
+    def __init__(self, *args, **kwargs):
+        super().__init__( *args, **kwargs)
+        bStyle = ttk.Style()
+        rStyle = ttk.Style()
+        bStyle.configure('bSlyle.TButton', foreground=myBlack)
+        rStyle.configure('rSlyle.TButton', foreground=myRed)
+        self._frames.append( self)
+        self.bind('<Button-1>', self._lastIsRed)
+
+    def _lastIsRed(self, _event):
+        for btn in self._frames:
+            btn.configure( style='bSlyle.TButton')
+        self.configure( style='rSlyle.TButton')
 
 
 class YoTextBox(tk.Text):
     def __init__(self, *args, **kwargs):
         self.re = re.compile( r'`(\w+?)`(.+?)`')
 
-        kwargs['bg'] = '#e1e1e1'
-        kwargs['fg'] = '#292929'
+        kwargs['bg'] = myGreay
+        kwargs['fg'] = myBlack
         kwargs['font'] = ("Consolas", 8)
 
         tk.Text.__init__(self, *args, **kwargs)
@@ -27,7 +49,7 @@ class YoTextBox(tk.Text):
         self.tk.createcommand(self._w, self._proxy)
         self.bind('<<TextModified>>', self.__textchanged__)
 
-        self.tag_configure("bold", font=("Consolas", 8, 'bold'), foreground='#292929')
+        self.tag_configure("bold", font=("Consolas", 8, 'bold'), foreground=myBlack)
         self.tag_configure("red", font=("Consolas", 8, 'bold'), foreground='red')
         self.tag_configure("green", font=("Consolas", 8, 'bold'), foreground='green')
         self.tag_configure("navy", font=("Consolas", 8, 'bold'), foreground='navy')
@@ -58,20 +80,9 @@ class YoTextBox(tk.Text):
             for _, tags in dicTags.items():
                 self.tag_add(tags["tag"], f'{self.lastLine}.{tags["start"]}', f'{self.lastLine}.{tags["end"]}')
 
-    # def __applytag__(lineID, line, tags, regex, widget):
-        # indexes = [(m.start(), m.end()) for m in re.finditer(regex, line)]
-        # if len( indexes) > 0:
-        #     print( indexes, tags, regex, line)
-        # for ind, x in enumerate( indexes):
-            # print( ind, tags[ind])
-            # widget.tag_add( tags[ind], f'{lineID + 1}.{x[0]}', f'{lineID + 1}.{x[1]}')
-            # widget.tag_add( tags[ind], f'{lineID + 1}.{x[0]}', f'{lineID + 1}.{x[1]}')
-
 
 class YoListBox(tk.Listbox):
     def __init__(self, parent, **kwargs):
-        myGreay = '#e1e1e1'
-        myBlack = '#292929'
         kwargs['bg'] = myGreay
         kwargs['fg'] = myBlack
         kwargs['font'] = ( 'Microsoft JhengHei UI', 10)
@@ -85,23 +96,13 @@ class YoListBox(tk.Listbox):
         selected = self.selection_get()
         self.configure(foreground='#00f')
         for i, _ in enumerate(result):
-            self.itemconfig(i, fg="#000", bg='#e1e1e1')
+            self.itemconfig(i, fg="#000", bg=myGreay)
             if result[i] == selected:
-                self.itemconfig(i, fg="#000", bg='#bbb')
+                self.itemconfig(i, fg="#000", bg=myBrown)
         # print (        u'Нажата кнопка', event) #.widget['text'])
 
 
 class YoFrame(tk.Tk):
-    _frame = None
-
-    def __new__(cls, *args, **kwargs):
-        if not cls._frame:
-            # print( '-=> New dic = ', cls._frame)
-            cls._frame = object.__new__(cls)
-        # else:
-            # print( '-=> Take olld dic = ', cls._frame)
-        # print( '-=> current dic = ', cls._frame)
-        return cls._frame
 
     def __init__(self, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
@@ -157,14 +158,14 @@ class YoFrame(tk.Tk):
         self.lbGameSelected  = ttk.Label(    groupGames, text="None")  #, font=('Microsoft JhengHei UI', 12))
         self.cbGameFolder    = ttk.Combobox( groupGames, textvariable=self.gameFolder,  values=settings['gameFolderList'], width=5, state='readonly')
         self.listGames       = YoListBox(    groupGames, selectmode=tk.NORMAL, height=4, width=32, )
-        self.btnGameRescan   = ttk.Button(   groupGames, text="rescan game list")  #, command= lambda: self.btnClickCTRL( 'btnGameRescan' ))#, command= gamesScan)
-        self.btnExtract      = ttk.Button(   groupGames, text="extract rpyc/fonts")  #, command= buttonExtract)
-        self.btnDecompile    = ttk.Button(   groupGames, text="decompile rpyc->rpy")  #, command= buttonDecompile)
-        self.btnRunRenpy     = ttk.Button(   groupGames, text="run SDK to translate")  #, command= btnRunSDKClick)
-        self.btnFontsCopy    = ttk.Button(   groupGames, text="non rus fonts + myStuff")  #, command= scanInputFolder)
-        self.btnMenuFinder   = ttk.Button(   groupGames, text="make menu finder")  #, command= findMenuStart)
-        self.btnCopyTL       = ttk.Button(   groupGames, text="copy tl files to translate")  #, command= copyTLStuff)
-        self.btnWordDic      = ttk.Button(   groupGames, text="word dic in tl folder")  # , command= lambda: makeRPYFiles())
+        self.btnGameRescan   = YoButton(   groupGames, text="rescan game list")  #, command= lambda: self.btnClickCTRL( 'btnGameRescan' ))#, command= gamesScan)
+        self.btnExtract      = YoButton(   groupGames, text="extract rpyc/fonts")  #, command= buttonExtract)
+        self.btnDecompile    = YoButton(   groupGames, text="decompile rpyc->rpy")  #, command= buttonDecompile)
+        self.btnRunRenpy     = YoButton(   groupGames, text="run SDK to translate")  #, command= btnRunSDKClick)
+        self.btnFontsCopy    = YoButton(   groupGames, text="non rus fonts + myStuff")  #, command= scanInputFolder)
+        self.btnMenuFinder   = YoButton(   groupGames, text="make menu finder")  #, command= findMenuStart)
+        self.btnCopyTL       = YoButton(   groupGames, text="copy tl files to translate")  #, command= copyTLStuff)
+        self.btnWordDic      = YoButton(   groupGames, text="word dic in tl folder")  # , command= lambda: makeRPYFiles())
 
         self.lbGameSelected.grid(row=0, column=0, sticky="N", padx=3, pady=3)
         self.cbGameFolder.grid(  row=1, column=0, sticky='NWES', padx=3, pady=3)
@@ -198,12 +199,12 @@ class YoFrame(tk.Tk):
         lbPanel.grid(row=1, column=0, sticky='NWES', columnspan=2)
         lbPanel.columnconfigure(0, weight=2, minsize=10)
 
-        self.btnTLScan      = ttk.Button(lbPanel, text="rescan tl folder")  # , command= lambda: rescanFolders())
-        self.btnMakeTemp    = ttk.Button(lbPanel, text="make temp files")  # , command= lambda: makeTempFiles( fileStat))
-        self.btnTranslate   = ttk.Button(lbPanel, text="translate temp files")  # , command= lambda: treatTranslate())
-        self.btnMakeRPY     = ttk.Button(lbPanel, text="make renpy files")  # , command= lambda: makeRPYFiles())
-        self.btnCopyRPY     = ttk.Button(lbPanel, text="copy renpy files back")  # , command= lambda: makeRPYFiles())
-        self.btnRunGame     = ttk.Button(lbPanel, text="run selected game ")  # , command= btnRunGameClick)
+        self.btnTLScan      = YoButton(lbPanel, text="rescan tl folder")  # , command= lambda: rescanFolders())
+        self.btnMakeTemp    = YoButton(lbPanel, text="make temp files")  # , command= lambda: makeTempFiles( fileStat))
+        self.btnTranslate   = YoButton(lbPanel, text="translate temp files")  # , command= lambda: treatTranslate())
+        self.btnMakeRPY     = YoButton(lbPanel, text="make renpy files")  # , command= lambda: makeRPYFiles())
+        self.btnCopyRPY     = YoButton(lbPanel, text="copy renpy files back")  # , command= lambda: makeRPYFiles())
+        self.btnRunGame     = YoButton(lbPanel, text="run selected game ")  # , command= btnRunGameClick)
 
         self.btnTLScan.grid(   row=0, column=0, sticky='NWES')
         self.btnMakeTemp.grid( row=1, column=0, sticky='NWES')
@@ -232,9 +233,9 @@ class YoFrame(tk.Tk):
         btnPanel.grid( row=2, column=0, columnspan=2, sticky='NWES')
         btnPanel.columnconfigure(0, weight=1)
 
-        self.btnTagCopy      = ttk.Button( btnPanel, text=">>>")
-        self.btnTagClear     = ttk.Button( btnPanel, text="xxx")
-        self.btnTempRepl     = ttk.Button( btnPanel, text="tag replace")
+        self.btnTagCopy      = YoButton( btnPanel, text=">>>>")
+        self.btnTagClear     = YoButton( btnPanel, text="<<<<")
+        self.btnTempRepl     = YoButton( btnPanel, text="tag replace")
 
         self.btnTagCopy.grid(  row=0, column=0, sticky='NWES', padx=0)
         self.btnTagClear.grid( row=1, column=0, sticky='NWES', padx=0)
@@ -302,29 +303,22 @@ class YoFrame(tk.Tk):
         #######################################################################################################
         #                                                   style
         #######################################################################################################
-        myGreay = '#e1e1e1'
-        myBlack = '#292929'
-        myRed = 'red'
-
-        self['bg'] = myGreay
+        self['bg']          = myGreay
         self.listFile['bg'] = myGreay
         self.listFile['fg'] = myBlack
+        self.textTag['bg']  = myGreay
+        self.textEng['bg']  = myGreay
+        self.textTag['fg']  = myBlack
+        self.textEng['fg']  = myBlack
 
-        groupComm['bg']       = myGreay
-        groupTags['bg']       = myGreay
-        groupGames['bg']      = myGreay
-        groupFiles['bg'] = myGreay
-        groupComm['fg']       = myBlack
-        groupTags['fg']       = myBlack
-        groupGames['fg']      = myBlack
-        groupFiles['fg'] = myBlack
-
-        # self.textLogs['bg'] = myGreay
-        self.textTag['bg'] = myGreay
-        self.textEng['bg'] = myGreay
-        # self.textLogs['fg'] = myBlack
-        self.textTag['fg'] = myBlack
-        self.textEng['fg'] = myBlack
+        groupComm['bg']     = myGreay
+        groupTags['bg']     = myGreay
+        groupGames['bg']    = myGreay
+        groupFiles['bg']    = myGreay
+        groupComm['fg']     = myBlack
+        groupTags['fg']     = myBlack
+        groupGames['fg']    = myBlack
+        groupFiles['fg']    = myBlack
 
         style = ttk.Style( self)
         style.configure('TFrame', foreground=myBlack, background=myGreay)
@@ -338,27 +332,6 @@ class YoFrame(tk.Tk):
         style.configure('TLabelFrame', foreground=myBlack, background=myGreay)
 
         style.map('TCheckbutton', indicatoron=[('pressed', '#ececec'), ('selected', '#4a6984')])
-        # groupComm.configure( style='groupComm.TLabelFrame')
-
-        # s = ttk.Style()
-        # style.configure('Wild.TButton', parent='claim',
-        #             background='black',
-        #             foreground='white',
-        #             highlightthickness='20',
-        #             font=('Helvetica', 8, 'bold'))
-        # style.map('Wild.TButton',
-        #       foreground=[('disabled', 'yellow'),
-        #                   ('pressed', 'red'),
-        #                   ('active', 'blue')],
-        #       background=[('disabled', 'magenta'),
-        #                   ('pressed', '!focus', 'cyan'),
-        #                   ('active', 'green')],
-        #       highlightcolor=[('focus', 'green'),
-        #                       ('!focus', 'red')],
-        #       relief=[('pressed', 'groove'),
-        #               ('!pressed', 'ridge')])
-        #
-        # self.btnDecompile.configure( style='Wild.TButton')
         #######################################################################################################
 
     def gameNameLabelSet(self):
@@ -370,7 +343,7 @@ class YoFrame(tk.Tk):
         if currentFile <= 0 or not isinstance( currentFile, int):
             result = self.listFile.get(0, tk.END)
             for i in range( len(result)):
-                self.listFile.itemconfig( i, fg="#000", bg='#e1e1e1')
+                self.listFile.itemconfig( i, fg="#000", bg=myGreay)
         else:
             self.listFile.itemconfig( currentFile, fg="#000", bg='#bbb')
 
@@ -456,6 +429,61 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+    # s = ttk.Style()
+    # style.configure('Wild.TButton', parent='claim',
+    #             background='black',
+    #             foreground='white',
+    #             highlightthickness='20',
+    #             font=('Helvetica', 8, 'bold'))
+    # style.map('Wild.TButton',
+    #       foreground=[('disabled', 'yellow'),
+    #                   ('pressed', 'red'),
+    #                   ('active', 'blue')],
+    #       background=[('disabled', 'magenta'),
+    #                   ('pressed', '!focus', 'cyan'),
+    #                   ('active', 'green')],
+    #       highlightcolor=[('focus', 'green'),
+    #                       ('!focus', 'red')],
+    #       relief=[('pressed', 'groove'),
+    #               ('!pressed', 'ridge')])
+    #
+    # self.btnDecompile.configure( style='Wild.TButton')
+
+    # _frame = None
+    #
+    # def __new__(cls, *args, **kwargs):
+    #     if not cls._frame:
+    #         # print( '-=> New dic = ', cls._frame)
+    #         cls._frame = object.__new__(cls)
+    #     # else:
+    #         # print( '-=> Take olld dic = ', cls._frame)
+    #     # print( '-=> current dic = ', cls._frame)
+    #     return cls._frame
+
+    # from toolTip import CreateToolTip
+    # def __new__(cls, *args, **kwargs):
+    #     key = args[0]
+    #     if not key in cls._dic:
+    #         cls._dic[key] = object.__new__(cls)
+    #     return cls._dic[key]
+    #
+    # def __new__(cls, *args, **kwargs):
+    #     # if cls not in cls._frames:
+    #     # print( '-=> New dic = ', cls._frames, cls)
+    #     key = object.__new__(cls)
+    #     cls._frames.append( key)
+    #     # print("args = ", cls, args, __class__.__name__)
+    #     return key
+
+    # def __applytag__(lineID, line, tags, regex, widget):
+        # indexes = [(m.start(), m.end()) for m in re.finditer(regex, line)]
+        # if len( indexes) > 0:
+        #     print( indexes, tags, regex, line)
+        # for ind, x in enumerate( indexes):
+            # print( ind, tags[ind])
+            # widget.tag_add( tags[ind], f'{lineID + 1}.{x[0]}', f'{lineID + 1}.{x[1]}')
+            # widget.tag_add( tags[ind], f'{lineID + 1}.{x[0]}', f'{lineID + 1}.{x[1]}')
 
 # button1_ttp = CreateToolTip(self.btnTLScan,      'Делается автоматически при старте программы.\n Можно тыкать, если поменялись файлы в папке tl или просто скучно...')
 # button2_ttp = CreateToolTip(self.btnMakeTemp,    'Делаем временные (temp) файлы в одноименной папке.\n Можно тыкать, если поменялись файлы в папке tl или накосячили с тэгами.'\

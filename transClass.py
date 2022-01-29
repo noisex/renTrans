@@ -120,7 +120,7 @@ class RPAClass:
                 self.app.print( f'`red`ERROR.` Can`t open file [{fileName}]')
 
         return dicRPA
- 
+
     def rpaGetFilesStats(self, fileList: dict) -> dict:
         dicRPA = {}
         for fileName in fileList:

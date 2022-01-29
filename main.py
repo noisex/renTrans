@@ -162,7 +162,7 @@ def btnMenuFindVars(_event):
         return
     fileList = game.getListFilesByExt( '.rpy', False, False, silent=True)
     game.makeNewBackupFolder()
-    app.print( f'finding menu with variables ( backUp in [{game.backupFolder}])...')
+    app.print( f'finding menu with variables ( backUp in [`bold`{game.backupFolder}`])...')
     for fileName, fileValue in fileList.items():
         fileText, error = readFileToList( fileName)
 
@@ -229,11 +229,11 @@ def copyTLStuff( event, old=None, new=None, updateList=True):
     if os.path.exists( old) and os.path.exists( new):
         game.clearFolder( '*', new)
         shutil.copytree( old, new, dirs_exist_ok=True, ignore=ignore_patterns('*.rpyc', 'xxx_*', 'common.rpy', 'options.rpy', 'screens.rpy'))
-        app.print( f'Files from [{old}] copied to [{new}].')
+        app.print( f'From [`bold`{old}`] copied to [`bold`{new}`].')
         if updateList:
             listFileStats( event)
     else:
-        app.print( f'ERROR: folder [{old}] not found. {os.path.exists( new)}')
+        app.print( f'`red`ERROR:` folder [`bold`{old}`] not found. {os.path.exists( new)}')
 
 
 def copyFontsAndStuff(_event):
@@ -262,7 +262,7 @@ def copyFontsAndStuff(_event):
                     try:
                         shutil.copy2( pathGame + 'webfont.ttf', fileName)  # complete target filename given
                     except FileNotFoundError:
-                        app.print(f'`red`Error.` File [`bold`webfont.ttf`] not found.')
+                        app.print( '`red`Error.` File [`bold`webfont.ttf`] not found.')
                 break
 
 
@@ -407,7 +407,7 @@ def btnTagsChange(_event):
                 app.print( f'-=> Skipped [{line}] -=> видимо оно лишнее...')
 
     fileList = game.getListFilesByExt( '.rpy', game.folderTEMP, silent=True)
-    for fileCurrent, fileNameTemp in enumerate( fileList, 1):
+    for fileNameTemp in fileList:
         # ТУТ НЕ НАДО В ЛИСТ!!!
         with open(fileNameTemp, 'r', encoding='utf-8') as file:
             fileData = file.read()
@@ -523,7 +523,7 @@ def btnMakeRPYFiles(_event):
 
         try:
             skipLines = 0
-            linesTranslated, error = readFileToList( fileNameTrans)
+            linesTranslated, _error = readFileToList( fileNameTrans)
             linesOriginal, error   = readFileToList( fileNameOrig)
 
             for lineCount, line in enumerate( linesOriginal):
@@ -641,9 +641,7 @@ def btnDecompileThread():
                 bad += 1
             elif len( line) > 3:
                 app.print(line)
-
         app.pbSet(( fileCurrent / filesTotal) * 100, f'{fileCurrent}/{filesTotal}')
-
     app.print( f'Decompiling compete. [{good}] files done with [{bad}] errors.', False)
 
 
