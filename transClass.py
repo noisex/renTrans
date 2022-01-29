@@ -14,7 +14,6 @@ from deep_translator.exceptions import RequestError
 
 class Translator:
     def __init__(self, app, game) -> None:
-        # print( '-=> Make new game', app, game)
         self.app = app
         self.game = game
 
@@ -22,11 +21,8 @@ class Translator:
         self.currentLine    = 0
         self.currentFile    = 0
         self.totalFiles     = 0
-        # self.totalLines     = 0
-        # self.totalSizes     = 0
         self.timeSTART      = 0
         self.threadSTOP     = {}
-        # self.threadSTOP['trans'] = threading.Thread( name='trans', target=makeTransFilesList, args=( ))
 
         lbPanel                 = ttk.Frame( self.app.groupFiles)  #, background="#99fb99")
         lbPanel.grid(row=1, column=0, sticky='NWES', columnspan=2)
@@ -46,10 +42,6 @@ class Translator:
         self.app.btnCopyRPY.grid(   row=4, column=0, sticky='NWES')
         self.app.btnRunGame.grid(   row=5, column=0, sticky='NWES')
 
-        # self.app.btnTranslate.bind( '<Button-1>', self.treatTranslate)
-        # self.app.btnMakeRPY.bind(   '<Button-1>', self.makeRPYFiles)
-        # self.app.btnALL.bind(       '<Button-1>', self.makeALLFiles)
-    
     def progressUpdate( self):
         timeDelta    = datetime.today().timestamp() - self.timeSTART
         timeFinish   = ( self.game.totalLines * timeDelta) / self.currentLine
@@ -95,7 +87,7 @@ class Translator:
         for ind, oLine in enumerate( oList, 1):
 
             if not getattr( self.threadSTOP['trans'], "do_run"):
-                self.app.print( 'translate break.', True)
+                self.app.print( '`red`translate break.`', True)
                 return "Error", True
 
             lineCurSize      = len( oLine)
@@ -109,7 +101,7 @@ class Translator:
                 else:
                     oLineTemp = self.lineTransate( oLineTemp, ind, listName)
 
-                self.app.print( f'-=> {round( ( ind / oListLines) * 100, 1):5}% {self.currentFile:2}/{self.totalFiles} ({lineTempSize:4}) [{listName:.48}]')
+                self.app.print( f'-=> {round( ( ind / oListLines) * 100, 1):5}% `bold`{self.currentFile:2}/{self.totalFiles}` ({lineTempSize:4}) [{listName:.48}]')
 
                 tList.append( oLineTemp)
                 oLineTemp = ""
@@ -121,18 +113,9 @@ class Translator:
 
 class RPAClass:
     def __init__(self, app, game) -> None:
-        # print( '-=> Make new game', app, game)
-        self.app = app
-        self.game = game
-        self.extension = settings['extension']
-
-    # def setNewFileInRPA(self, fileList, fileName, size, count):
-    #     fileList[fileName] = {
-    #         'size'  : size,
-    #         'count' : count,
-    #         'files' : []
-    #     }
-    #     return  fileList
+        self.app        = app
+        self.game       = game
+        self.extension  = settings['extension']
 
     def rpaExtractFiles(self, fileList: dict, pathGame: str) -> None:
         for fileName in fileList:
@@ -140,7 +123,7 @@ class RPAClass:
             try:
                 UnRPA(fileName, path=pathGame).extract_files('.', fileList[fileName], self.app)
             except:
-                self.app.print( f'ERROR. Can`t open file [{fileName}]')
+                self.app.print( f'`red`ERROR.` Can`t open file [{fileName}]')
 
     def rpaGetListFilesExt(self, fileList: dict) -> dict:
         dicRPA = {}
@@ -154,14 +137,13 @@ class RPAClass:
                             dicRPA[fileName] = []
                         dicRPA[fileName].append( fileArchName)
             except:
-                self.app.print( f'ERROR. Can`t open file [{fileName}]')
+                self.app.print( f'`red`ERROR.` Can`t open file [{fileName}]')
 
         return dicRPA
  
     def rpaGetFilesStats(self, fileList: dict) -> dict:
         dicRPA = {}
         for fileName in fileList:
-            # shorFileName = os.path.basename( fileName)
             try:
                 archNames   = UnRPA(fileName).list_files()
                 rpycFiles   = 0
@@ -171,7 +153,7 @@ class RPAClass:
                     extention = os.path.splitext(fileArchName)[1].lower()
                     if extention == '.rpyc':
                         rpycFiles += 1
-                    elif extention in '.ttf, .otf':
+                    elif extention in ('.ttf', '.otf'):
                         fontsFiles += 1
 
                 dicRPA[fileList[fileName]['fileName']] = {
@@ -181,7 +163,7 @@ class RPAClass:
                     'fontsFiles': fontsFiles,
                 }
             except:
-                self.app.print( f'ERROR. Can`t open file [{fileName}]')
+                self.app.print( f'`red`ERROR.` Can`t open file [{fileName}]')
 
         return dicRPA
 

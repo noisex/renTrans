@@ -7,8 +7,22 @@ from settings import settings
 class GameRenpy():
     def __init__(self, app, *args, **kwargs):
         # tk.Tk.__init__(self, *args, **kwargs)
+        self.app = app
+        self.gameName = None
+        self.path = None
+        self.gamePath = None
+        self.shortPath = None
+        self.pathPython = None
+        self.totalLines = 0
+        self.totalSizes = 0
+        self.totalFiles = 0
+        self.wordDicCount = 0
+        self.listTempTags = {}
+        self.itemDict = {}
+        self.threadSTOP = {}
+
         self.backupFolderTemplate = 'Backup'
-        self.gameFolder     = settings['gameFolder']  #'D:\\AdGames\\'
+        self.gameFolder     = self.app.gameFolder.get()  #settings['gameFolder']  #'D:\\AdGames\\'
         self.backupFolder   = settings['backupFolder']  #Backup'
         self.folderTL       = settings['folderTL']  #'workFolder\\tl\\'
         self.folderTEMP     = settings['folderTEMP']  #'workFolder\\temp\\'
@@ -18,20 +32,6 @@ class GameRenpy():
         self.rootPath       = os.path.abspath(os.getcwd()) + '\\'  # C:\GitHub\renTrans\
         self.folderSDK      = self.rootPath + settings['folderSDK']  # noqa: E221
         self.fileSkip       = settings['fileSkip']
-
-        self.app            = app
-        self.gameName       = None
-        self.path           = None
-        self.gamePath       = None
-        self.shortPath      = None
-        self.pathPython     = None
-        self.totalLines     = 0
-        self.totalSizes     = 0
-        self.totalFiles     = 0
-        self.wordDicCount   = 0
-        self.listTempTags    = {}
-        self.itemDict       = {}
-        self.threadSTOP     = {}
 
         self.makeNewDirs()
 
@@ -86,16 +86,13 @@ class GameRenpy():
                 # enc_list.remove(encode)
         return fileSize, fileLine
 
-    def getListFilesByExt( self, ext='.rpy', gamePath=None, withTL=True, withStat=False) -> dict:
-
+    def getListFilesByExt( self, ext='.rpy', gamePath=None, withTL=True, withStat=False, onlyRoot=None, silent=False) -> dict:
         if not gamePath:
             gamePath = self.getPathGame()
-
         gamePathTemp = 'TestDirs' + 'game\\tl' if withTL else 'game\\tl'
 
         if isinstance( ext, str):
             ext = ext.split( ', ')
-
         if withStat:
             self.totalLines = 0
             self.totalSizes  = 0
@@ -108,25 +105,23 @@ class GameRenpy():
                     and ( os.path.splitext( fileName)[1] in ext or '*' in ext) \
                         and fileName not in self.fileSkip:
 
+                    if onlyRoot and top != gamePath:
+                        break
                     # filePath = os.path.normpath( os.path.join( top, fileName))
                     filePath = os.path.join( top, fileName)
-                    # print(( filePath, gamePath))
                     filesAll[filePath] = {
                         'fileShort': filePath.replace( gamePath, ''),
                         'fileName' : os.path.basename( filePath)
                     }
-
                     if withStat:
-                        # lines   = self.rawincount( filePath)
                         size, lines     = self.getFileSize( filePath)  #os.path.getsize(  filePath)
                         self.totalLines += lines
                         self.totalSizes += size
                         self.totalFiles += 1
                         filesAll[filePath]['lines'] = lines
                         filesAll[filePath]['size']  = size
-        # print( dict(sorted(filesAll.items())))
-        # print( filesAll)
-        self.app.print( f'found [{len( filesAll)}] {ext} files in [{gamePath}] folder.')
+        if not silent:
+            self.app.print( f'found [`bold`{len( filesAll)}`] {ext} files in [`bold`{gamePath}`] folder.')
         return dict( sorted( filesAll.items()))
 
     def listGameDClick( self):
@@ -134,21 +129,23 @@ class GameRenpy():
         self.path           = self.gameFolder + self.gameName + '\\'
         self.gamePath       = self.gameFolder + self.gameName + '\\game\\'
         self.pathPython     = self.path       + settings["folderPython"]
-        # self.shortPath      = self.path
+        tempLine = ''
         self.shortPath      = self.gameName + '\\'
-        self.app.print( f'Game: {self.gameName}', True, tag='bold')
         if os.path.exists( self.gamePath + '\\tl\\rus\\'):
-            self.app.print( '-=> with [RUS] tl folder')
+            tempLine += '[`green`RUS`] '
         if os.path.exists( self.gamePath + '\\tl\\russian\\'):
-            self.app.print( '-=> with [RUSSIAN] tl folder')
+            tempLine += '[`red`RUSSIAN`] '
         if os.path.exists( self.gamePath + '\\tl\\en\\'):
-            self.app.print( '-=> with [EN] tl folder')
+            tempLine += '[`red`EN`] '
         if os.path.exists( self.gamePath + '\\tl\\english\\'):
-            self.app.print( '-=> with [ENGLISH] tl folder')
+            tempLine += '[`red`ENGLISH`] '
+
+        self.app.print(f'Game: `navy`{self.gameName}` {tempLine}', True)  # , tag='bold')
 
     def gameListScan( self, _event):
+        self.gameFolder = self.app.gameFolder.get()
         self.app.listGames.delete(0, tk.END)
-        self.app.lbGameSelected['fg'] = '#f00'
+        self.app.lbGameSelected.configure( foreground='#f00')
         self.app.lbGameSelected['text'] = 'None'
 
         with os.scandir( self.gameFolder) as fileList:
@@ -170,7 +167,7 @@ class GameRenpy():
 
     def checkSelectedGame( self):
         if not self.gameName:
-            self.app.print( 'Error with game dir. No game selected!', True)
+            self.app.print( '`red`Error` with game folder. `navy`No game selected!`', True)
 
     def getPathGame( self):
         self.checkSelectedGame( )

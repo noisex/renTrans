@@ -7,12 +7,14 @@ settings = {
     'engLine'       : '\\n{i}{size=-3}{color=#999}',
     'itemSize'      : '{size=-5}{color=#777}',
     'gameFolder'    : 'D:\\AdGames\\',
+    'gameFolderList': ['D:\\AdGames\\', 'E:\\!adgame done\\' ],
     'backupFolder'  : 'Backup',
     'workFolder'    : workFolder,  # noqa: E203
     'folderTL'      : workFolder + 'tl\\',
     'folderTEMP'    : workFolder + 'temp\\',
     'folderTRANS'   : workFolder + 'trans\\',
     'folderRPY'     : workFolder + 'tl_done\\',  # noqa: E203
+    'folderGAME'    : workFolder + 'game\\',  # noqa: E203
     'folderLOGS'    : 'logs\\',
     'folderSDK'     : 'renpy-sdk\\',
     'folderPython'  : 'lib\\windows-i686\\python.exe',
