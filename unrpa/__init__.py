@@ -140,8 +140,9 @@ class UnRPA:
                             version.postprocess(file_view, output_file)
 
                         currentFile += 1
-                        app.pbSet( (currentFile/totalFile) *100, f'{currentFile}/{totalFile}')
-                        app.print( f'-=> [{currentFile:4}] [{path}]')
+                        percent = (currentFile / totalFile) * 100
+                        app.print( f'-=> [`bold`{currentFile:4}`] [`rain{ round( percent)}`{path}`]')
+                        app.pbSet( percent, f'{currentFile}/{totalFile}')
 
                 except BaseException as error:
                     if self.continue_on_error:

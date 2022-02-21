@@ -1,7 +1,7 @@
 import os
-import shutil
 import tkinter as tk
 from settings import settings
+# from renTrans import RenTrans
 
 
 class GameRenpy():
@@ -12,6 +12,7 @@ class GameRenpy():
         self.path = None
         self.gamePath = None
         self.shortPath = None
+        self.gameTLRUS = None
         self.pathPython = None
         self.totalLines = 0
         self.totalSizes = 0
@@ -24,33 +25,6 @@ class GameRenpy():
         self.backupFolderTemplate = 'Backup'
         self.gameFolder     = self.app.gameFolder.get()  #settings['gameFolder']  #'D:\\AdGames\\'
         self.backupFolder   = settings['backupFolder']  #Backup'
-        self.folderTL       = settings['folderTL']  #'workFolder\\tl\\'
-        self.folderTEMP     = settings['folderTEMP']  #'workFolder\\temp\\'
-        self.folderTRANS    = settings['folderTRANS']  #'workFolder\\trans\\'
-        self.folderRPY      = settings['folderRPY']  #'workFolder\\tl_done\\'
-        # self.folderLOGS     = settings['folderLOGS']
-        self.rootPath       = os.path.abspath(os.getcwd()) + '\\'  # C:\GitHub\renTrans\
-        self.folderSDK      = self.rootPath + settings['folderSDK']  # noqa: E221
-        self.fileSkip       = settings['fileSkip']
-
-        self.makeNewDirs()
-
-    def makeNewDirs( self):
-        if not os.path.exists( self.folderRPY):                                   # создаем дирректорию для файлов с переводом (если нужно)
-            os.mkdir( self.folderRPY)
-            self.app.print( f'Папка {self.folderRPY} - из нее забираем перевод')
-        if not os.path.exists( self.folderTL):                                       # создаем дирректорию для файлов с переводом (если нужно)
-            os.mkdir( self.folderTL)
-            self.app.print( f'Папка {self.folderTL} - в нее кладем файлы для перевода')
-        if not os.path.exists( self.folderTEMP):                                       # создаем дирректорию для файлов с переводом (если нужно)
-            os.mkdir( self.folderTEMP)
-            self.app.print( f'Папка {self.folderTEMP} - она просто нужна...')
-        if not os.path.exists( self.folderTRANS):                                       # создаем дирректорию для файлов с переводом (если нужно)
-            os.mkdir( self.folderTRANS)
-            self.app.print( f'Папка {self.folderTRANS} - она просто нужна...')
-        # if not os.path.exists( self.folderLOGS):                                       # создаем дирректорию для файлов с переводом (если нужно)
-        #     os.mkdir( self.folderLOGS)
-        #     self.app.print( f'Папка {self.folderLOGS} - какие-то логи...')
 
     def makeNewBackupFolder( self):
         self.backupFolder = self.backupFolderTemplate
@@ -69,7 +43,7 @@ class GameRenpy():
     #     return sum( buf.count(b'\n') for buf in bufgen )
 
     @staticmethod
-    def getFileSize( fileName: str) -> list:
+    def getFileSize( fileName: str) -> tuple:
         fileSize = 0
         fileLine = 0
         for encode in settings['encList']:
@@ -86,7 +60,7 @@ class GameRenpy():
                 # enc_list.remove(encode)
         return fileSize, fileLine
 
-    def getListFilesByExt( self, ext='.rpy', gamePath=None, withTL=True, withStat=False, onlyRoot=None, silent=False) -> dict:
+    def getListFilesByExt( self, ext='.rpy', gamePath=None, withTL=True, withStat=False, onlyRoot=None, silent=False, lastScan=None) -> dict:
         if not gamePath:
             gamePath = self.getPathGame()
         gamePathTemp = 'TestDirs' + 'game\\tl' if withTL else 'game\\tl'
@@ -103,17 +77,19 @@ class GameRenpy():
             for fileName in files:
                 if gamePathTemp not in top \
                     and ( os.path.splitext( fileName)[1] in ext or '*' in ext) \
-                        and fileName not in self.fileSkip:
+                        and fileName not in settings['fileSkip']:
 
                     if onlyRoot and top != gamePath:
                         break
                     # filePath = os.path.normpath( os.path.join( top, fileName))
                     filePath = os.path.join( top, fileName)
+                    # fileTime = os.path.getmtime(filePath)
                     filesAll[filePath] = {
                         'fileShort': filePath.replace( gamePath, ''),
                         'fileName' : os.path.basename( filePath)
                     }
                     if withStat:
+                        # print( fileName, fileTime, lastScan)
                         size, lines     = self.getFileSize( filePath)  #os.path.getsize(  filePath)
                         self.totalLines += lines
                         self.totalSizes += size
@@ -121,49 +97,53 @@ class GameRenpy():
                         filesAll[filePath]['lines'] = lines
                         filesAll[filePath]['size']  = size
         if not silent:
-            self.app.print( f'found [`bold`{len( filesAll)}`] {ext} files in [`bold`{gamePath}`] folder.')
+            self.app.print( f'[`bold`{len( filesAll)}`] {ext} files in [`bold`{gamePath}`]')
         return dict( sorted( filesAll.items()))
 
     def listGameDClick( self):
         self.gameName       = self.app.listGames.selection_get()
         self.path           = self.gameFolder + self.gameName + '\\'
         self.gamePath       = self.gameFolder + self.gameName + '\\game\\'
-        self.pathPython     = self.path       + settings["folderPython"]
+        self.pathPython     = None
+        pathPython          = self.path       + 'lib\\'
+
+        try:
+            libFolder = list( filter( lambda x: x.startswith( 'windows'), os.listdir( pathPython)))
+            for folder in libFolder:
+                tryName = pathPython + folder + '\\python.exe'
+                if os.path.exists( tryName):
+                    self.pathPython = tryName
+
+            if not self.pathPython:
+                self.app.print( f'`navy`Warning:` not found python for Windows in folder [`bold`{pathPython}`]')
+
+        except BaseException as e:
+            self.app.print( f'`red`ERROR:` cant found python libs in game folder: [`bold`{pathPython}`]')
+            self.app.print( f'{e}')
+
         tempLine = ''
         self.shortPath      = self.gameName + '\\'
-        if os.path.exists( self.gamePath + '\\tl\\rus\\'):
+        self.gameTLRUS      = self.gamePath + 'tl\\rus\\'
+
+        if os.path.exists( self.gameTLRUS):
             tempLine += '[`green`RUS`] '
-        if os.path.exists( self.gamePath + '\\tl\\russian\\'):
+        if os.path.exists( self.gamePath + 'tl\\russian\\'):
             tempLine += '[`red`RUSSIAN`] '
-        if os.path.exists( self.gamePath + '\\tl\\en\\'):
+        if os.path.exists( self.gamePath + 'tl\\en\\'):
             tempLine += '[`red`EN`] '
-        if os.path.exists( self.gamePath + '\\tl\\english\\'):
+        if os.path.exists( self.gamePath + 'tl\\english\\'):
             tempLine += '[`red`ENGLISH`] '
+        self.app.print(f'`big`{self.gameName}` {tempLine}', True)  # , tag='bold')
 
-        self.app.print(f'Game: `navy`{self.gameName}` {tempLine}', True)  # , tag='bold')
-
+    # todo new game init
     def gameListScan( self, _event):
         self.gameFolder = self.app.gameFolder.get()
-        self.app.listGames.delete(0, tk.END)
-        self.app.lbGameSelected.configure( foreground='#f00')
-        self.app.lbGameSelected['text'] = 'None'
+        self.app.gameNameLabelReset()
 
         with os.scandir( self.gameFolder) as fileList:
             for dirName in fileList:
                 if dirName.is_dir() and os.path.exists( f'{self.gameFolder}{dirName.name}\\game\\') and os.path.exists( f'{self.gameFolder}{dirName.name}\\renpy\\'):
                     self.app.listGames.insert( tk.END, dirName.name)
-
-    # TODO rewrite listwalk vs listdir
-    @staticmethod
-    def clearFolder(fileExt='.rpy', dirName='str'):
-        if fileExt == '*':
-            shutil.rmtree( dirName)
-            os.mkdir( dirName)
-        else:
-            test = os.listdir(dirName)
-            for item in test:
-                if item.endswith( fileExt):
-                    os.remove(os.path.join(dirName, item))
 
     def checkSelectedGame( self):
         if not self.gameName:

@@ -1,13 +1,13 @@
 import os
 import time
 from datetime import datetime
-# from itertools import (takewhile,repeat)
-# from itertools import takewhile, repeat
-
-from settings import settings
-from unrpa import UnRPA
 from deep_translator import GoogleTranslator
 from deep_translator.exceptions import RequestError
+from settings import settings
+from unrpa import UnRPA
+from renTrans import RenTrans
+
+rent = RenTrans()
 
 
 class Translator:
@@ -35,7 +35,7 @@ class Translator:
         self.app.pbSet(( self.currentLine / self.game.totalLines) * 100 , f'{self.currentFile}/{self.totalFiles}')
 
     def printTransError( self, error, lineSize, lineCount, listName):
-        self.app.print( f'-=> ERROR: {error} -=> line: [{lineCount}] ( {lineSize}b) at [{listName}]', tag='red')
+        self.app.print( f'-=> ERROR: {error} -=> line: [{lineCount}] ( {lineSize}b) at [{listName}]')
         self.threadSTOP['trans'].do_run = False
 
     def listTransPrepare(self, lenFileList):
@@ -59,34 +59,32 @@ class Translator:
 
         return tLine
 
-    def listTranslate( self, oList: list, listName: str) -> tuple:
+    def listTranslate(self, oList: list, listName: str) -> tuple:
         tList       = []
         oLineTemp   = ''
-        oListLines  = len( oList)
+        oListLines  = len(oList)
+        testRun     = self.app.testRun.get()
 
-        for ind, oLine in enumerate( oList, 1):
-
-            if not getattr( self.threadSTOP['trans'], "do_run"):
-                self.app.print( '`red`translate break.`', True)
+        for ind, oLine in enumerate(oList, 1):
+            if not getattr(self.threadSTOP['trans'], "do_run"):
+                self.app.print('`red`translate break.`', True)
                 return "Error", True
-
-            lineCurSize      = len( oLine)
-            lineTempSize     = len( oLineTemp)
+            lineCurSize = len(oLine)
+            lineTempSize = len(oLineTemp)
             self.currentLine += 1
             self.currentSize += lineCurSize
-
-            if ( lineTempSize + lineCurSize >= settings['TRLEN']) or ( ind == oListLines):
-                if self.app.testRun.get():
-                    time.sleep( settings['testWait'])
+            # print("dasdsa ", lineTempSize, lineCurSize, settings['TRLEN'], ind, oListLines, oLineTemp, oLine)
+            if (lineTempSize + lineCurSize >= settings['TRLEN']) or (ind == oListLines):
+                if testRun:
+                    time.sleep(settings['testWait'])
                 else:
-                    oLineTemp = self.lineTransate( oLineTemp, ind, listName)
+                    oLineTemp = self.lineTransate(oLineTemp, ind, listName)
 
-                self.app.print( f'-=> {round( ( ind / oListLines) * 100, 1):5}% `bold`{self.currentFile:2}/{self.totalFiles}` ({lineTempSize:4}) [{listName:.48}]')
-
-                tList.append( oLineTemp)
+                percent = round((ind / oListLines) * 100, 1)
+                self.app.print(f'`rain{ round( percent)}`-=> {percent:5}%` `bold`{self.currentFile:2}/{self.totalFiles}` ({lineTempSize:4}) [{listName:.48}]')
+                tList.append(oLineTemp)
                 oLineTemp = ""
                 self.progressUpdate()
-
             oLineTemp += oLine + '\n'
         return tList, False
 
@@ -99,11 +97,11 @@ class RPAClass:
 
     def rpaExtractFiles(self, fileList: dict, pathGame: str) -> None:
         for fileName in fileList:
-            self.app.print(f'Extracting from {fileName}...', True)
+            self.app.print(f'Extracting from [`bold`{fileName}`]...', True)
             try:
                 UnRPA(fileName, path=pathGame).extract_files('.', fileList[fileName], self.app)
             except:
-                self.app.print( f'`red`ERROR.` Can`t open file [{fileName}]')
+                self.app.print( f'`red`ERROR.` Can`t open file [`bold`{fileName}`]')
 
     def rpaGetListFilesExt(self, fileList: dict) -> dict:
         dicRPA = {}
@@ -117,7 +115,7 @@ class RPAClass:
                             dicRPA[fileName] = []
                         dicRPA[fileName].append( fileArchName)
             except:
-                self.app.print( f'`red`ERROR.` Can`t open file [{fileName}]')
+                self.app.print( f'`red`ERROR.` Can`t open file [`bold`{fileName}`]')
 
         return dicRPA
 
@@ -154,3 +152,48 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+    #
+    # def listTranslate( self, oList: list, listName: str) -> tuple:
+    #     tList       = []
+    #     indList     = []
+    #     oLineTemp   = ''
+    #     oListLines  = len( oList)
+    #
+    #     for ind, sepLine in enumerate( oList, 1):
+    #
+    #         if not getattr( self.threadSTOP['trans'], "do_run"):
+    #             self.app.print( '`red`Translate break. :(`', True)
+    #             return "Error", True
+    #
+    #         # lineCurSize      = len( sepLine.encode("utf-8"))
+    #         # lineTempSize     = len( oLineTemp.encode("utf-8"))
+    #         lineCurSize      = len( sepLine)
+    #         lineTempSize     = len( oLineTemp)
+    #         self.currentLine += 1
+    #         self.currentSize += lineCurSize
+    #
+    #         if ( lineTempSize + lineCurSize >= settings['TRLEN']) or ( ind == oListLines):
+    #             if self.app.testRun.get():
+    #                 time.sleep( settings['testWait'])
+    #             else:
+    #                 oLineTemp = self.lineTransate( oLineTemp, ind, listName)
+    #
+    #             percent = ( ind / oListLines) * 100
+    #             rent.print( f'-=> `rain{ round(percent)}`{ round(percent, 1):5}%` `bold`{self.currentFile:2}/{self.totalFiles}` ({lineTempSize:4}) [{listName:.60}]')
+    #
+    #             olList = oLineTemp.split( '\n')
+    #
+    #             for i, iid in enumerate( indList):
+    #                 tList.append( f'{iid}#{olList[i]}')
+    #             oLineTemp = ""
+    #             indList = []
+    #             self.progressUpdate()
+    #
+    #         sepLine = sepLine.split('#', 1)
+    #         if len( sepLine) == 2:
+    #             indList.append(int(sepLine[0]))
+    #             oLine = sepLine[1]
+    #
+    #             oLineTemp += oLine + '\n'
+    #     return tList, False

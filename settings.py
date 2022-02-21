@@ -2,23 +2,23 @@ workFolder          = 'workFolder\\'  # noqa: E221
 
 settings = {
     'TRLEN'         : 4990,  # 4700 for GoogleTranslate
-    'testWait'      : 0.1,
+    'testWait'      : 0.07,
     'engTRANS'      : False,
     'engLine'       : '\\n{i}{size=-3}{color=#999}',
     'itemSize'      : '{size=-5}{color=#777}',
     'gameFolder'    : 'D:\\AdGames\\',
     'gameFolderList': ['D:\\AdGames\\', 'E:\\!adgame done\\' ],
     'backupFolder'  : 'Backup',
+    'folderList'    : ( 'tl', 'temp', 'ind', 'trans', 'tl_done'),
     'workFolder'    : workFolder,  # noqa: E203
     'folderTL'      : workFolder + 'tl\\',
     'folderTEMP'    : workFolder + 'temp\\',
+    'folderIND'     : workFolder + 'ind\\',
     'folderTRANS'   : workFolder + 'trans\\',
     'folderRPY'     : workFolder + 'tl_done\\',  # noqa: E203
     'folderGAME'    : workFolder + 'game\\',  # noqa: E203
     'folderLOGS'    : 'logs\\',
     'folderSDK'     : 'renpy-sdk\\',
-    'folderPython'  : 'lib\\windows-i686\\python.exe',
-
     'extension': [
         '.rpyc',
         '.ttf',
@@ -56,21 +56,33 @@ settings = {
         'киской'    : 'пиздой',
         'трахать'   : 'ебать',
         'трахаю'    : 'ебу',
+        'трахай'    : 'еби',
         'трахнул'   : 'выебал',
         'трахал'    : 'ебал',
         'трахнуть'  : 'выебать',
         'трахни'    : 'выеби',
         'трахаешь'  : 'ебешь',
+        'трахаешься': 'ебешься',
+        'трахаетесь': 'ебетесь',
+        'трахается' : 'ебется',
         'трахают'   : 'ебут',
+        'трахает'   : 'ебет',
         'трахнули'  : 'выебали',
         'трахаться' : 'ебаться',
+        'потрахаться' : 'поебаться',
         'олухи'     : 'сиськи',
+        'олухами'   : 'сиськами',
         'щенки'     : 'сиськи',
         'задницу'   : 'жопу',
+        'попу'      : 'жопу',
+        'попку'     : 'жопу',
+        'попкой'    : 'жопой',
         'диплом'    : 'кончить',
         'перебирать': 'дрочить',
         'мастурбировать': 'дрочить',
         'мастурбирую'   : 'дрочу',
+        'мастурбирует'  : 'дрочит',
+        'мастурбируют'  : 'дрочат',
     },
 
     'encList': [
