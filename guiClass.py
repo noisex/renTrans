@@ -69,6 +69,7 @@ class YoTextBox(tk.Text):
     def __textchanged__(self, evt):
         self.lastLine += 1
         line = evt.widget.get( f'{self.lastLine}.0', 'end-2c')
+        # todo впмхнуть проверку на конец количество строк
         fix  = re.findall( self.re, line)
         if len( fix) >= 1:
             dicTags = {}
@@ -125,6 +126,130 @@ class YoListBox(tk.Listbox):
         # print (        u'Нажата кнопка', event) #.widget['text'])
 
 
+class YoTreeView(ttk.Treeview):
+    def __init__(self, parent, **kwargs):
+        super().__init__(parent, **kwargs)
+        self.bind( '<Double-1>', self.doubleClick)
+        self.arrow      = False
+        self.sortColumn = '#0'
+        self.selected   = None
+        self.app        = YoFrame()
+        self._orig      = self._w + "_orig"
+        self.tk.call("rename", self._w, self._orig)
+        self.tk.createcommand(self._w, self._proxy)
+
+        style = ttk.Style()
+        style.configure("mystyle.Treeview.Heading", font=('Calibri', 10, 'bold'), rowheight=10)  # Modify the font of the headings
+        style.configure("mystyle.Treeview", highlightthickness=0, bd=0, font=('Calibri', 8), rowheight=15)  # Modify the font of the body
+        style.layout("mystyle.Treeview", [('mystyle.Treeview.treearea', {'sticky': 'NWSE'})])  # Remove the borders
+
+        self.tag_configure('odd', background=myRed, foreground=myGreay, font=('Calibri', 9, 'bold'))  # '#E8E8E8')
+        self.tag_configure('even', background=myGreay, foreground=myBlack)  # '#DFDFDF')
+        self.configure( style="mystyle.Treeview",  selectmode='browse')
+
+    def _proxy(self, command, *args):
+        
+        if command in "insert":  # , "delete", "replace"):
+            itemText = args[3]
+            if ( self.selected) and ( itemText in self.selected):
+                args = args + ( '-tags', 'odd')
+        elif command in 'column':
+            columnID = args[0]
+            if columnID in '#0':
+                textName = self.names[0]
+            else:
+                textName = self.names[int(columnID)]
+            self.heading( columnID, text=textName, anchor=tk.W, command=lambda c=columnID: self.headerClick(c))
+
+        cmd = (self._orig, command) + args
+        # print( command, args)
+        result = self.tk.call(cmd)
+        return result
+
+    def updateData(self):
+        if len( self.data) < 1:
+            return
+        sortID = int( self.sortColumn) if self.sortColumn not in '#0' else 0
+
+        try:
+            _listSorted = sorted( self.data, key=lambda x: x[sortID], reverse=self.arrow)
+        except IndexError:
+            return
+        self.delete( *self.get_children())
+        for data in _listSorted:
+            textData = ()
+            for ind in range( 1, len(data)):
+                textData = textData + ( data[ind],)
+            self.insert('', "end", None, text=data[0], values=textData)
+
+    def insertData(self, data):
+        self.data = data
+        self.updateData()
+
+    def treeReset( self):
+        self.headerClear()
+        self.selected   = None
+        self.sortColumn = '#0'
+
+    def treeTagsReset( self, tagNameOld: str, tagNameNew=''):
+        tagList = self.tag_has(tagNameOld, item=None)
+        for itemID in tagList:
+            self.item(itemID, tags=(tagNameNew,))
+
+    def doubleClick( self, event):
+        region = self.identify("region", event.x, event.y)  # header/tree/cell
+        if region in ('tree', 'cell'):
+            self.treeTagsReset( 'odd', '')
+
+            selected = self.focus()
+            item = self.item(selected)
+            self.item(selected, tags=('odd',))
+            self.selected = item['text']
+            # print(selected, item, region, self.selected)
+
+    def toggleArrow( self):
+        self.arrow = not self.arrow
+        return ' ' + chr(8593) if self.arrow else ' ' + chr(8595)  # chr( 24) chr( 25) 30 31
+
+    def setArrow( self):
+        self.arrow = False
+        return ' ' + chr(8595)
+
+    def headerClear( self, headerID=None):
+        if headerID:
+            headerData = self.heading(headerID)
+            headerText = headerData['text'].split(' ')[0]
+            self.heading(headerID, text=headerText)
+        else:
+            headerData = self.heading('#0')
+            headerText = headerData['text'].split(' ')[0]
+            self.heading('#0', text=headerText)
+        
+            for headID, headerName in enumerate(self["columns"]):
+                headerData = self.heading(headID)
+                headerText = headerData['text'].split(' ')[0]
+                # print( headerName, headerText)
+                self.heading(headID, text=headerText)
+
+    def headerClick( self, headerID):    #command=lambda c=2:    self.treeGames.headerClick(c)
+        if headerID != self.sortColumn:
+            self.headerClear(self.sortColumn)
+
+        headerData = self.heading(headerID)
+        headerSplitText = headerData['text'].split(' ')
+        headerText = headerSplitText[0]
+
+        if len(headerSplitText) > 1:
+            arrow = self.toggleArrow()
+        else:
+            arrow = self.setArrow()
+
+        self.heading(headerID, text=headerText + arrow)
+        self.sortColumn = headerID
+        self.updateData()
+        # print( headerID, headerData, self.treeGames.sortColumn)
+        
+
 class YoFrame(tk.Tk):
     _init = None
     _instance = None
@@ -176,6 +301,10 @@ class YoFrame(tk.Tk):
         self.gameFolder = tk.StringVar()
         self.gameFolder.set( settings['gameFolderList'][0])
 
+        _gameSot = ('by name', 'by date')
+        self.gameSort = tk.StringVar()
+        self.gameSort.set( _gameSot[0])  # = sort by name
+
         self.minsize( 1300, 400)
         self.geometry("1450x650")
 
@@ -184,8 +313,7 @@ class YoFrame(tk.Tk):
         self.rowconfigure(   1, weight=0, pad=5)
 
         self.menubar    = tk.Menu( self, background=myGreay)
-
-        self.filemenu        = tk.Menu( self.menubar, tearoff=0, background=myGreay, foreground=myBlack)
+        self.filemenu   = tk.Menu( self.menubar, tearoff=0, background=myGreay, foreground=myBlack)
         self.filemenu.add_command(label="Open")
         # self.filemenu.add_command(label="Find & Replace")
         # self.filemenu.add_command(label="WordDIC replacer")
@@ -203,8 +331,13 @@ class YoFrame(tk.Tk):
         groupGames.columnconfigure(0, weight=2, minsize=25)
         groupGames.rowconfigure( 2, weight=2, pad=0)
 
+        frameCombo = ttk.Frame( groupGames)
+        frameCombo.columnconfigure(0, weight=50)
+        frameCombo.grid( row=1, column=0, sticky='NWES', padx=0, pady=3)
+
         self.lbGameSelected  = ttk.Label(    groupGames, text="None")  #, font=('Microsoft JhengHei UI', 12))
-        self.cbGameFolder    = ttk.Combobox( groupGames, textvariable=self.gameFolder,  values=settings['gameFolderList'], width=5, state='readonly')
+        self.cbGameFolder    = ttk.Combobox( frameCombo, textvariable=self.gameFolder, values=settings['gameFolderList'], state='readonly')
+        self.cbGamesSort     = ttk.Combobox( frameCombo, textvariable=self.gameSort,   values=_gameSot,          width=8, state='readonly')
         self.listGames       = YoListBox(    groupGames, selectmode=tk.NORMAL, height=4, width=32, )
         self.btnGameRescan   = YoButton(   groupGames, text="rescan game list")  #, command= lambda: self.btnClickCTRL( 'btnGameRescan' ))#, command= gamesScan)
         self.btnExtract      = YoButton(   groupGames, text="extract rpyc/fonts")  #, command= buttonExtract)
@@ -216,7 +349,8 @@ class YoFrame(tk.Tk):
         # self.btnWordDic      = YoButton(   groupGames, text="word dic in tl folder")  # , command= lambda: makeRPYFiles())
 
         self.lbGameSelected.grid(row=0, column=0, sticky="N", padx=3, pady=3)
-        self.cbGameFolder.grid(  row=1, column=0, sticky='NWES', padx=3, pady=3)
+        self.cbGameFolder.grid(  row=0, column=0, sticky='NWES', padx=3)
+        self.cbGamesSort.grid(   row=0, column=1, sticky='NWES', padx=3)
         self.listGames.grid(     row=2, column=0, sticky="NWES", padx=3, pady=3, columnspan=1)
         self.btnGameRescan.grid( row=3, column=0, sticky='NWES')
         self.btnExtract.grid(    row=4, column=0, sticky='NWES')
@@ -242,21 +376,20 @@ class YoFrame(tk.Tk):
         self.tabControl.add(tab1, text='Current')
         self.tabControl.grid(    row=0, column=0, sticky="NWES", padx=0, pady=0)
 
-        tabList = {}
+        self.tabList = {}
         for tName in settings['folderList']:
-            tabList[tName] = {}
-            tabList[tName]['tab'] = ttk.Frame( self.tabControl)
-            tabList[tName]['sb']  = ttk.Scrollbar( tabList[tName]['tab'], orient=tk.VERTICAL)
-            tabList[tName]['lb']  = tk.Listbox(tabList[tName]['tab'], selectmode=tk.NORMAL, height=4, width=45, font=("Consolas", 8), yscrollcommand=tabList[tName]['sb'].set, bg=myGreay, fg=myBlack)
-            tabList[tName]['lb'].grid(row=0, column=0, sticky="NWES", padx=0, pady=0)
-            tabList[tName]['lb'].lastScan = 0
-            tabList[tName]['sb'].grid( row=0, column=1, sticky="NS")
-            tabList[tName]['sb'].config(command=tabList[tName]['lb'].yview)
-            tabList[tName]['tab'].rowconfigure(0, weight=2, minsize=25)
+            tab = ttk.Frame( self.tabControl)
+            sb  = ttk.Scrollbar( tab, orient=tk.VERTICAL)
+            lb  = tk.Listbox( tab, selectmode=tk.NORMAL, height=4, width=45, font=("Consolas", 8), yscrollcommand=sb.set, bg=myGreay, fg=myBlack)
 
-            self.tabControl.add( tabList[tName]['tab'], text=tName)
-            # lastTab = tabControl.tabs()[-1]
-            # print( tName, tabControl.tabs()[-1])
+            lb.grid(row=0, column=0, sticky="NWES", padx=0, pady=0)
+            lb.lastScan = 0
+            sb.grid( row=0, column=1, sticky="NS")
+            sb.config(command=lb.yview)
+            tab.rowconfigure(0, weight=2, minsize=25)
+
+            self.tabControl.add( tab, text=tName)
+            self.tabList[tName] = {'tab': tab, 'sb': sb, 'lb': lb, }
 
         self.listFileSCy    = ttk.Scrollbar(tab1, orient=tk.VERTICAL)
         self.listFile       = tk.Listbox(   tab1, selectmode=tk.NORMAL, height=4, width=45, font=("Consolas", 8), yscrollcommand=self.listFileSCy.set)
@@ -266,7 +399,7 @@ class YoFrame(tk.Tk):
         self.listFileSCy.config(command=self.listFile.yview)
 
         lbPanel = ttk.Frame( groupFiles)  # , background="#99fb99")
-        lbPanel.grid(row=1, column=0, sticky='NWES') #, columnspan=2)
+        lbPanel.grid(row=1, column=0, sticky='NWES')  #, columnspan=2)
         lbPanel.columnconfigure(0, weight=2, minsize=10)
 
         self.btnTLScan      = YoButton(lbPanel, text="rescan tl folder")  # , command= lambda: rescanFolders())
@@ -372,6 +505,65 @@ class YoFrame(tk.Tk):
         self.textLogsSCy.grid( row=2, column=1, sticky="NS")
 
         #######################################################################################################
+        #                                                   5 test
+        #######################################################################################################
+        groupTest = tk.LabelFrame(self, text="Test frame", padx=3, pady=3)
+        # groupTest.grid(row=0, column=4, padx=3, pady=3, sticky='NWES')
+        groupTest.columnconfigure(0, weight=1, minsize=30)
+        groupTest.rowconfigure(0, weight=2, pad=0)
+        groupTest['bg'] = myGreay
+        groupTest['fg'] = myBlack
+
+        self.treeGames = YoTreeView( groupTest)
+        self.treeGames.grid( row=0, column=0, sticky='NWES')
+       
+        self.treeGames["columns"] = ( 1, 2, 3, 4)
+        self.treeGames.names      = ( "Name", "Date", "Type", "Size", 'New')
+
+        self.treeGames.column("#0", width=95, minwidth=15, stretch=tk.NO, anchor=tk.W)
+        self.treeGames.column( 1,   width=95, minwidth=15, stretch=tk.NO)
+        self.treeGames.column( 2,   width=65, minwidth=15, stretch=tk.NO)
+        self.treeGames.column( 3,   width=45, minwidth=15, stretch=tk.NO, anchor=tk.E)
+        self.treeGames.column( 4,   width=75, minwidth=15, stretch=tk.NO, anchor=tk.N)
+
+        data = []
+        data.append(( "Folder 2", "23-Jun-17 11:05", "File folder", '', 'qwerty', ""))
+        data.append(( "text.txt", "23-Jun-17 11:25", "TXT file", "1 KB", 'dasdas'))
+        data.append(( "photo1.png", "23-Jun-17 11:28", "PNG file", "2.6 KB", '331'))
+        data.append(( "photo2.png", "23-Jun-17 11:29", "PNG file", "3.2 KB", 312312))
+        data.append(( "photo3.png", "23-Jun-17 11:30", "PNG file", "3.1 KB", 4444))
+        data.append(( "photo4.png", "22-Jun-17 11:30", "PNG file", "4.1 KB", 5533))
+        data.append(( "photo5.png", "23-Jun-17 11:28", "PNG file", "2.6 KB"))
+        data.append(( "photo6.png", "23-Jun-17 11:29", "PNG file", "3.2 KB"))
+        data.append(( "photo7.png", "23-Jun-17 11:30", "PNG file", "3.1 KB"))
+        data.append(( "photo8.png", "22-Jun-17 11:30", "PNG file", "4.1 KB"))
+        self.treeGames.insertData( data)
+        # << TreeviewSelect >>
+        # << TreeviewOpen >>
+        # << TreeviewClose >>
+        # A data column number is an index into an item’s option values list; a display column number is the column number in the tree where the values are displayed.Tree
+        # labels are displayed in column  #0. If option displaycolumns is not set, then data column n is displayed in column #n+1. Again, column #0 always refers to the tree column.
+        # https://docs.python.org/3/library/tkinter.ttk.html#treeview
+        #######################################################################################################
+        #                                                   6 test
+        #######################################################################################################
+        # vscrollbar = tk.Scrollbar(self, orient=tk.VERTICAL)
+        # vscrollbar.pack(fill=tk.Y, side=tk.RIGHT, expand=tk.FALSE)
+        # vscrollbar.grid(row=0, column=4, padx=3, pady=3, sticky='NWES')
+        #
+        # canvas = tk.Canvas(self, bd=0, highlightthickness=0, yscrollcommand=vscrollbar.set)
+        # canvas.grid(row=0, column=4, padx=3, pady=3, sticky='NWES')
+        # vscrollbar.config(command=canvas.yview)
+        #
+        # # reset the view
+        # canvas.xview_moveto(0)
+        # canvas.yview_moveto(0)
+        #
+        # # create a frame inside the canvas which will be scrolled with it
+        # self.interior = interior = tk.Frame(canvas)
+        # interior_id = canvas.create_window(0, 0, window=interior, anchor=tk.NW)
+
+        #######################################################################################################
         #                                                   style
         #######################################################################################################
         self['bg']          = myGreay
@@ -405,6 +597,12 @@ class YoFrame(tk.Tk):
 
         style.map('TCheckbutton', indicatoron=[('pressed', '#ececec'), ('selected', '#4a6984')])
         #######################################################################################################
+
+    def askClearFolder(self, filePath, txt):
+        import filesClass as files
+        msgBox = mb.askquestion( 'Clear folder before run SDK?', txt) #, icon='question')
+        if msgBox == 'yes':
+            files.clearFolder( filePath, '*')
 
     def gameNameLabelReset( self):
         self.listGames.delete(0, tk.END)
@@ -451,7 +649,13 @@ class YoFrame(tk.Tk):
                 mb.showinfo( "Work", 'Work complete!')
         return percentStr
 
-    def listFileUpdate( self, fileStat, lb=None):
+    def labelsSet(self, tl=0, ts=0, cl=0, cs=0, st=0, et=0 ):
+        self.lbStart["text"]    = st
+        self.lbEnd["text"]      = et
+        self.lbLine['text']     = f'{cl:,} из {tl:,}'
+        self.lbLines['text']    = f'{cs:,} из {ts:,}'
+
+    def listFileUpdate( self, fileList, lb=None):
         i = 0
         totalSize = 0
         totalLine = 0
@@ -463,7 +667,7 @@ class YoFrame(tk.Tk):
         listBox.delete( 0, tk.END)
         listBox.insert(tk.END, f"  №|{'File':^25}|{'Size':^8}|{'Line':^6}")
 
-        for _, fileValue in fileStat.items():
+        for _, fileValue in fileList.items():
             i += 1
             if 'lines' in fileValue:
                 tLine = fileValue['lines']
@@ -477,10 +681,8 @@ class YoFrame(tk.Tk):
             else:
                 tSize = 0
             listBox.insert( tk.END, f"{i:3}|{fileValue['fileName']:<25.25}|{tSize:>8,}|{tLine:>6}")
-
-        if lb is None:
-            self.lbLine['text']  = f'{0:,} из {totalLine:,}'
-            self.lbLines['text'] = f'{0:,} из {totalSize:,}'
+        # if lb is None:
+        #     self.labelsSet( totalLine, totalSize)
 
     def print( self, line, newLine=False, lastLine=False, tag=None):
         self.textLogs['state'] = tk.NORMAL

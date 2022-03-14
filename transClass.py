@@ -11,38 +11,26 @@ rent = RenTrans()
 
 
 class Translator:
-    def __init__(self, app, game) -> None:
+    def __init__(self, app) -> None:
         self.app = app
-        self.game = game
-
-        self.currentSize    = 0
-        self.currentLine    = 0
-        self.currentFile    = 0
-        self.totalFiles     = 0
         self.timeSTART      = 0
         self.threadSTOP     = {}
 
-    def progressUpdate( self):
-        timeDelta    = datetime.today().timestamp() - self.timeSTART
-        timeFinish   = ( self.game.totalLines * timeDelta) / self.currentLine
-        timeEND      = self.timeSTART + timeFinish
-        timeLaps     = timeFinish - timeDelta
-
-        self.app.lbStart["text"] = datetime.fromtimestamp( timeEND).strftime( "%H:%M:%S")
-        self.app.lbEnd["text"]   = datetime.utcfromtimestamp( timeLaps).strftime("%Mм %Sс")
-        self.app.lbLine['text']  = f'{self.currentLine:,} из {self.game.totalLines:,}'
-        self.app.lbLines['text'] = f'{self.currentSize:,} из {self.game.totalSizes:,}'
-        self.app.pbSet(( self.currentLine / self.game.totalLines) * 100 , f'{self.currentFile}/{self.totalFiles}')
+    def progressUpdate( self, tl: int, ts: int, tf: int, cl: int, cs: int, cf: int):
+        timeDelta   = datetime.today().timestamp() - self.timeSTART
+        timeFinish  = ( tl * timeDelta) / cl
+        timeEND     = self.timeSTART + timeFinish
+        timeLaps    = timeFinish - timeDelta
+        st          = datetime.fromtimestamp( timeEND).strftime( "%H:%M:%S")
+        et          = datetime.utcfromtimestamp( timeLaps).strftime("%Mм %Sс")
+        self.app.labelsSet( tl, ts, cl, cs, st, et)
+        self.app.pbSet(( cl / tl) * 100 , f'{cf}/{tf}')
 
     def printTransError( self, error, lineSize, lineCount, listName):
         self.app.print( f'-=> ERROR: {error} -=> line: [{lineCount}] ( {lineSize}b) at [{listName}]')
         self.threadSTOP['trans'].do_run = False
 
-    def listTransPrepare(self, lenFileList):
-        self.currentSize   = 0
-        self.currentLine   = 0
-        self.currentFile   = 0
-        self.totalFiles    = lenFileList
+    def listTransPrepare(self):
         self.timeSTART     = datetime.today().timestamp()
 
     def lineTransate( self, oLine, lineCount=0, listName='noListName'):
@@ -59,7 +47,7 @@ class Translator:
 
         return tLine
 
-    def listTranslate(self, oList: list, listName: str) -> tuple:
+    def listTranslate(self, oList: list, listName: str, tl: int, ts: int, tf: int, cl=0, cs=0, cf=0, ) -> tuple:
         tList       = []
         oLineTemp   = ''
         oListLines  = len(oList)
@@ -71,8 +59,8 @@ class Translator:
                 return "Error", True
             lineCurSize = len(oLine)
             lineTempSize = len(oLineTemp)
-            self.currentLine += 1
-            self.currentSize += lineCurSize
+            cl += 1
+            cs += lineCurSize
             # print("dasdsa ", lineTempSize, lineCurSize, settings['TRLEN'], ind, oListLines, oLineTemp, oLine)
             if (lineTempSize + lineCurSize >= settings['TRLEN']) or (ind == oListLines):
                 if testRun:
@@ -81,10 +69,10 @@ class Translator:
                     oLineTemp = self.lineTransate(oLineTemp, ind, listName)
 
                 percent = round((ind / oListLines) * 100, 1)
-                self.app.print(f'`rain{ round( percent)}`-=> {percent:5}%` `bold`{self.currentFile:2}/{self.totalFiles}` ({lineTempSize:4}) [{listName:.48}]')
+                self.app.print(f'`rain{ round( percent)}`-=> {percent:5}%` `bold`{cf:2}/{tf}` ({lineTempSize:4}) [{listName:.48}]')
                 tList.append(oLineTemp)
                 oLineTemp = ""
-                self.progressUpdate()
+                self.progressUpdate( tl, ts, tf, cl, cs, cf)
             oLineTemp += oLine + '\n'
         return tList, False
 
@@ -125,12 +113,15 @@ class RPAClass:
             try:
                 archNames   = UnRPA(fileName).list_files()
                 rpycFiles   = 0
+                rpyFiles    = 0
                 fontsFiles  = 0
 
                 for fileArchName in archNames:
                     extention = os.path.splitext(fileArchName)[1].lower()
                     if extention == '.rpyc':
                         rpycFiles += 1
+                    elif extention == '.rpy':
+                        rpyFiles += 1
                     elif extention in ('.ttf', '.otf'):
                         fontsFiles += 1
 
@@ -138,6 +129,7 @@ class RPAClass:
                     'size'      : os.path.getsize(fileName) / (1024 * 1024),
                     'count'     : len(archNames),
                     'rpycFiles' : rpycFiles,
+                    'rpyFiles'  : rpyFiles,
                     'fontsFiles': fontsFiles,
                 }
             except:

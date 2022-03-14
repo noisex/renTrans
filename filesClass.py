@@ -1,8 +1,5 @@
 import os
-# import pandas as pd
-# import time
 import shutil
-# import logging
 
 from settings import settings
 from guiClass import YoFrame
@@ -20,6 +17,86 @@ fileSkip    = settings['fileSkip']
 
 # logFileName = f"{settings['folderLOGS']}mainlog_{time.strftime('%Y.%m.%d')}.log"
 # logging.basicConfig(filename=logFileName, format='%(asctime)s %(message)s', datefmt='%Y.%m.%d %H:%M:%S', encoding='utf-8', level=logging.INFO)
+
+
+def getFileSize(fileName: str) -> tuple:
+    fileSize = 0
+    fileLine = 0
+    for encode in settings['encList']:
+        try:
+            with open(fileName, encoding=encode) as f:
+                for line in f.read().split('\n'):
+                    fileLine += 1
+                    fileSize += len(line)
+                # print(encode, fileSize, fileLine)
+                return fileSize, fileLine
+        except:
+            pass
+            # print( f' encode [{encode}] not good...')
+            # enc_list.remove(encode)
+    return fileSize, fileLine
+
+
+def getFolderList( gamePath: str, ext='.rpy', withTL=True, withStat=None, onlyRoot=None, silent=None):
+    if not gamePath:
+        return
+
+    if isinstance(ext, str):
+        ext = ext.split(', ')
+
+    totalLines = 0
+    totalSizes = 0
+    totalFiles = 0
+    totalRPY   = 0
+    totalRPYC  = 0
+    totalRPA   = 0
+
+    filesAll = {}
+    for top, _, files in os.walk(gamePath):  # Находим файлы для перевода в дирректории
+        for fileName in files:
+            fileExt = os.path.splitext( fileName.lower())[1]
+
+            if fileExt.endswith( '.rpy'):
+                totalRPY += 1
+            elif fileExt.endswith( '.rpyc'):
+                totalRPYC += 1
+            elif fileExt.endswith( '.rpa'):
+                totalRPA += 1
+
+            if ( 'game\\tl' not in top or withTL) \
+                    and (( fileExt in ext) or ( '*' in ext)) \
+                    and fileName not in settings['fileSkip']:
+
+                if onlyRoot and top != gamePath:
+                    break
+                # filePath = os.path.normpath( os.path.join( top, fileName))
+                filePath = os.path.join(top, fileName)
+                filesAll[filePath] = {
+                    'fileShort': filePath.replace(gamePath, ''),
+                    'fileName' : os.path.basename(filePath),
+                    'totalRPY' : totalRPY,
+                    'totalRPYC': totalRPYC,
+                    'totalRPA' : totalRPA,
+                    # 'fileTime' : os.path.getmtime(filePath)
+                }
+                if withStat:
+                    # print( fileName, fileTime, lastScan)
+                    size, lines = getFileSize(filePath)  # os.path.getsize(  filePath)
+                    totalLines += lines
+                    totalSizes += size
+                    totalFiles += 1
+                    filesAll[filePath]['lines'] = lines
+                    filesAll[filePath]['size'] = size
+                    filesAll[filePath]['linesTotal'] = totalLines
+                    filesAll[filePath]['sizeTotal']  = totalSizes
+
+    if not silent:
+        app.print(f'[`bold`{len(filesAll)}`] {ext} files in [`bold`{gamePath}`]')
+    return filesAll  # dict( sorted( filesAll.items()))
+
+
+def getFolderTime( fileName):
+    return os.path.getmtime( fileName)
 
 
 def readFileToList( fileName: str) -> tuple:

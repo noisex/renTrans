@@ -42,64 +42,6 @@ class GameRenpy():
     #     bufgen = takewhile(lambda x: x, (f.raw.read(1024*1024) for _ in repeat(None)))
     #     return sum( buf.count(b'\n') for buf in bufgen )
 
-    @staticmethod
-    def getFileSize( fileName: str) -> tuple:
-        fileSize = 0
-        fileLine = 0
-        for encode in settings['encList']:
-            try:
-                with open( fileName, encoding=encode) as f:
-                    for line in f.read().split('\n'):
-                        fileLine += 1
-                        fileSize += len( line)
-                    # print(encode, fileSize, fileLine)
-                    return fileSize, fileLine
-            except:
-                pass
-                # print( f' encode [{encode}] not good...')
-                # enc_list.remove(encode)
-        return fileSize, fileLine
-
-    def getListFilesByExt( self, ext='.rpy', gamePath=None, withTL=True, withStat=False, onlyRoot=None, silent=False, lastScan=None) -> dict:
-        if not gamePath:
-            gamePath = self.getPathGame()
-        gamePathTemp = 'TestDirs' + 'game\\tl' if withTL else 'game\\tl'
-
-        if isinstance( ext, str):
-            ext = ext.split( ', ')
-        if withStat:
-            self.totalLines = 0
-            self.totalSizes  = 0
-            self.totalFiles = 0
-
-        filesAll = {}
-        for top, _, files in os.walk( gamePath):                           # Находим файлы для перевода в дирректории
-            for fileName in files:
-                if gamePathTemp not in top \
-                    and ( os.path.splitext( fileName)[1] in ext or '*' in ext) \
-                        and fileName not in settings['fileSkip']:
-
-                    if onlyRoot and top != gamePath:
-                        break
-                    # filePath = os.path.normpath( os.path.join( top, fileName))
-                    filePath = os.path.join( top, fileName)
-                    # fileTime = os.path.getmtime(filePath)
-                    filesAll[filePath] = {
-                        'fileShort': filePath.replace( gamePath, ''),
-                        'fileName' : os.path.basename( filePath)
-                    }
-                    if withStat:
-                        # print( fileName, fileTime, lastScan)
-                        size, lines     = self.getFileSize( filePath)  #os.path.getsize(  filePath)
-                        self.totalLines += lines
-                        self.totalSizes += size
-                        self.totalFiles += 1
-                        filesAll[filePath]['lines'] = lines
-                        filesAll[filePath]['size']  = size
-        if not silent:
-            self.app.print( f'[`bold`{len( filesAll)}`] {ext} files in [`bold`{gamePath}`]')
-        return dict( sorted( filesAll.items()))
-
     def listGameDClick( self):
         self.gameName       = self.app.listGames.selection_get()
         self.path           = self.gameFolder + self.gameName + '\\'
@@ -108,7 +50,8 @@ class GameRenpy():
         pathPython          = self.path       + 'lib\\'
 
         try:
-            libFolder = list( filter( lambda x: x.startswith( 'windows'), os.listdir( pathPython)))
+            # libFolder = list( filter( lambda x: x.startswith( 'windows'), os.listdir( pathPython)))
+            libFolder = list( filter( lambda x: 'windows' in x, os.listdir( pathPython)))
             for folder in libFolder:
                 tryName = pathPython + folder + '\\python.exe'
                 if os.path.exists( tryName):
@@ -138,12 +81,33 @@ class GameRenpy():
     # todo new game init
     def gameListScan( self, _event):
         self.gameFolder = self.app.gameFolder.get()
+        sortOrder   = self.app.gameSort.get()
+        gameReverse = False
+        listGames   = {}
+        gameID      = 0
         self.app.gameNameLabelReset()
 
         with os.scandir( self.gameFolder) as fileList:
             for dirName in fileList:
-                if dirName.is_dir() and os.path.exists( f'{self.gameFolder}{dirName.name}\\game\\') and os.path.exists( f'{self.gameFolder}{dirName.name}\\renpy\\'):
-                    self.app.listGames.insert( tk.END, dirName.name)
+                gamePath = f'{self.gameFolder}{dirName.name}'
+                if dirName.is_dir() and os.path.exists( f'{gamePath}\\game\\') and os.path.exists( f'{gamePath}\\renpy\\'):
+
+                    if sortOrder == 'by date':
+                        gameSort    = os.path.getmtime( gamePath)
+                        gameReverse = True
+                    else:
+                        gameSort    = gameID
+
+                    listGames[gameID] = {
+                        'dirName': dirName.name,
+                        'gameSort': gameSort
+                    }
+                    gameID += 1
+
+        _listSorted = sorted( listGames.items(), key=lambda x: x[1]['gameSort'], reverse=gameReverse)
+
+        for gameData in _listSorted:
+            self.app.listGames.insert( tk.END, gameData[1]['dirName'])
 
     def checkSelectedGame( self):
         if not self.gameName:

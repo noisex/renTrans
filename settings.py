@@ -4,7 +4,7 @@ settings = {
     'TRLEN'         : 4990,  # 4700 for GoogleTranslate
     'testWait'      : 0.07,
     'engTRANS'      : False,
-    'engLine'       : '\\n{i}{size=-3}{color=#999}',
+    'engLine'       : '\\n{i}{size=-5}{color=#999}',
     'itemSize'      : '{size=-5}{color=#777}',
     'gameFolder'    : 'D:\\AdGames\\',
     'gameFolderList': ['D:\\AdGames\\', 'E:\\!adgame done\\' ],
@@ -21,6 +21,7 @@ settings = {
     'folderSDK'     : 'renpy-sdk\\',
     'extension': [
         '.rpyc',
+        '.rpy',
         '.ttf',
         '.otf'
     ],
@@ -61,6 +62,7 @@ settings = {
         'трахал'    : 'ебал',
         'трахнуть'  : 'выебать',
         'трахни'    : 'выеби',
+        'трахну'    : 'выебу',
         'трахаешь'  : 'ебешь',
         'трахаешься': 'ебешься',
         'трахаетесь': 'ебетесь',
@@ -74,6 +76,7 @@ settings = {
         'олухами'   : 'сиськами',
         'щенки'     : 'сиськи',
         'задницу'   : 'жопу',
+        'заднице'   : 'жопе',
         'попу'      : 'жопу',
         'попку'     : 'жопу',
         'попкой'    : 'жопой',
