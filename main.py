@@ -496,7 +496,7 @@ def btnMakeTempFiles(event):
         files.writeListToFile( tempFileName, oList)
         files.writeListToFile( indFileName, iList)
 
-    app.pbReset()
+    app.pbTotal.pbReset()
     fileList = files.getFolderList( files.folderTEMP, ext='.rpy', withTL=True, withStat=True)
     totalLines, totalSizes, _, _, _ = getDicLastData( fileList)
     app.listFileUpdate(fileList)
@@ -646,7 +646,7 @@ def btnRPAExtract(_event):
     if not pathGame:
         return
 
-    app.pbReset()
+    app.pbTotal.pbReset()
     game.threadSTOP['run'] = threading.Thread(name='run', target=btnRPAExtractThread, args=(pathGame,))
     game.threadSTOP['run'].do_run = True
     game.threadSTOP['run'].start()
@@ -662,7 +662,7 @@ def btnDecompileThread():
     if not pathGame:
         return
 
-    app.pbReset()
+    app.pbTotal.pbSet()
     app.print( 'Start decompiling rpyc files..', True)
 
     good = 0
@@ -686,7 +686,7 @@ def btnDecompileThread():
             elif len( line) > 3:
                 percent = ( fileCurrent / filesTotal) * 100
                 app.print( f'`rain{ round( percent)}`{line}`')
-        app.pbSet( percent, f'{fileCurrent}/{filesTotal}')
+        app.pbTotal.pbSet( percent, f'{fileCurrent}/{filesTotal}')
     app.print( f'Decompiling complete. [{good}] files done with [{bad}] errors.', False)
 
 

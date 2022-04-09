@@ -8,7 +8,9 @@ from tkinter import ttk
 from tkinter import messagebox as mb
 from colour import Color
 # from mycolorpy import colorlist as mcp
+from yoFrames import YoProgress
 from settings import settings
+
 
 myBlack = '#292929'
 myGreay = '#e1e1e1'
@@ -41,6 +43,7 @@ class YoTextBox(tk.Text):
         super().__init__( *args, **kwargs)
         # self.re = re.compile( r'`(\w+?)`(.+?)`')
         self.lastLine = 0
+        self.lastString = ''
         self._orig = self._w + "_orig"
         self.tk.call("rename", self._w, self._orig)
         self.tk.createcommand(self._w, self._proxy)
@@ -61,15 +64,15 @@ class YoTextBox(tk.Text):
     def _proxy(self, command, *args):
         cmd = (self._orig, command) + args
         result = self.tk.call( cmd)
+        self.lastString = args
         # print( command, args)
         if command in "insert":   #, "replace"):
             self.event_generate("<<TextModified>>")
         return result
 
     def __textchanged__(self, evt):
-        self.lastLine += 1
+        self.lastLine += self.lastString[1].count( '\n')
         line = evt.widget.get( f'{self.lastLine}.0', 'end-2c')
-        # todo впмхнуть проверку на конец количество строк
         fix  = re.findall( self.re, line)
         if len( fix) >= 1:
             dicTags = {}
@@ -476,11 +479,7 @@ class YoFrame(tk.Tk):
         self.optLang    = ttk.Combobox(  lbPanel, textvariable=self.lang,  values=self.languages, width=5, state='readonly')
         self.optTrans   = ttk.Combobox(  lbPanel, textvariable=self.trans, values=self.languages, width=5, state='readonly')
 
-        self.stPBar     = ttk.Style( groupComm)
-        self.stPBar.layout(   "lbPBar", [('lbPBar.trough', {'children': [('lbPBar.pbar', {'side': 'left', 'sticky': 'ns'}), ("lbPBar.label", {"sticky": "ns"})], 'sticky': 'NWSE'})])
-        self.stPBar.configure("lbPBar", text="0%")  #, relief='sunken')
-
-        self.pbTotal    = ttk.Progressbar( groupComm, mode="determinate", length=200, style='lbPBar')
+        self.pbTotal    = YoProgress( groupComm, mode="determinate", length=200, rootTitle=self)  # style='lbPBar')
         self.textLogsSCy = ttk.Scrollbar(groupComm, orient=tk.VERTICAL)
         self.textLogs   = YoTextBox( groupComm, height=4, width=53, yscrollcommand=self.textLogsSCy.set)
         self.textLogsSCy.config(command=self.textLogs.yview)
@@ -633,21 +632,6 @@ class YoFrame(tk.Tk):
         self.textEng.delete( '1.0', tk.END)
         self.textEng.grid_forget()
         self.textTag.grid( row=0, column=0, sticky='NWES', padx=5, columnspan=2)
-
-    def pbReset( self):
-        self.pbTotal['value'] = 0
-        self.stPBar.configure("lbPBar", text="0%      ")
-
-    def pbSet( self, percent=0, titleText=''):
-        percentStr = str( round( percent, 2))
-        self.pbTotal['value'] = percentStr
-        self.title( f'{percentStr}% [{titleText}]')
-        self.stPBar.configure("lbPBar", text=percentStr + "%      ")
-        if percent >= 100:
-            self.print('`navy`Work complete.`', True)
-            if not self.focus_get():  # is not self.textLogs:
-                mb.showinfo( "Work", 'Work complete!')
-        return percentStr
 
     def labelsSet(self, tl=0, ts=0, cl=0, cs=0, st=0, et=0 ):
         self.lbStart["text"]    = st

@@ -24,7 +24,7 @@ class Translator:
         st          = datetime.fromtimestamp( timeEND).strftime( "%H:%M:%S")
         et          = datetime.utcfromtimestamp( timeLaps).strftime("%Mм %Sс")
         self.app.labelsSet( tl, ts, cl, cs, st, et)
-        self.app.pbSet(( cl / tl) * 100 , f'{cf}/{tf}')
+        self.app.pbTotal.pbSet(( cl / tl) * 100 , f'{cf}/{tf}')
 
     def printTransError( self, error, lineSize, lineCount, listName):
         self.app.print( f'-=> ERROR: {error} -=> line: [{lineCount}] ( {lineSize}b) at [{listName}]')
@@ -88,8 +88,8 @@ class RPAClass:
             self.app.print(f'Extracting from [`bold`{fileName}`]...', True)
             try:
                 UnRPA(fileName, path=pathGame).extract_files('.', fileList[fileName], self.app)
-            except:
-                self.app.print( f'`red`ERROR.` Can`t open file [`bold`{fileName}`]')
+            except BaseException as error:
+                self.app.print( f'`red`ERROR.` [`bold`{fileName}`]: {error}')
 
     def rpaGetListFilesExt(self, fileList: dict) -> dict:
         dicRPA = {}

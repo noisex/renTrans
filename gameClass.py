@@ -4,7 +4,7 @@ from settings import settings
 # from renTrans import RenTrans
 
 
-class GameRenpy():
+class GameRenpy:
     def __init__(self, app):
         # tk.Tk.__init__(self, *args, **kwargs)
         self.app = app

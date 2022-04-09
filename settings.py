@@ -1,7 +1,7 @@
 workFolder          = 'workFolder\\'  # noqa: E221
 
 settings = {
-    'TRLEN'         : 4990,  # 4700 for GoogleTranslate
+    'TRLEN'         : 4950,  # 4700 for GoogleTranslate
     'testWait'      : 0.07,
     'engTRANS'      : False,
     'engLine'       : '\\n{i}{size=-5}{color=#999}',

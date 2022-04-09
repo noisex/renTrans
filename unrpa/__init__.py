@@ -142,7 +142,7 @@ class UnRPA:
                         currentFile += 1
                         percent = (currentFile / totalFile) * 100
                         app.print( f'-=> [`bold`{currentFile:4}`] [`rain{ round( percent)}`{path}`]')
-                        app.pbSet( percent, f'{currentFile}/{totalFile}')
+                        app.pbTotal.pbSet( percent, f'{currentFile}/{totalFile}')
 
                 except BaseException as error:
                     if self.continue_on_error:
