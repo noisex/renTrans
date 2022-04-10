@@ -581,6 +581,7 @@ def btnMakeRPYFiles(_event):
             if originalIND:
                 originalIND = int( originalIND)
                 oLine = linesOriginal[originalIND]
+                # print(originalIND, tIND, oLine)
                 tLine = linesTranslated[tIND]
 
                 tLine = correctOpenBrackets( tLine, oLine)

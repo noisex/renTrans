@@ -66,7 +66,12 @@ class Translator:
                 if testRun:
                     time.sleep(settings['testWait'])
                 else:
+                    lineNCount = oLineTemp.count( '\n')
                     oLineTemp = self.lineTransate(oLineTemp, ind, listName)
+                    lineONCount = oLineTemp.count('\n') + 1
+
+                    if lineNCount > lineONCount:
+                        oLineTemp += '\n' * ( lineNCount - lineONCount)
 
                 percent = round((ind / oListLines) * 100, 1)
                 self.app.print(f'`rain{ round( percent)}`-=> {percent:5}%` `bold`{cf:2}/{tf}` ({lineTempSize:4}) [{listName:.48}]')
