@@ -49,7 +49,8 @@ class Translator:
 
     def listTranslate(self, oList: list, listName: str, tl: int, ts: int, tf: int, cl=0, cs=0, cf=0, ) -> tuple:
         tList       = []
-        oLineTemp   = ''
+        lineCum     = ''
+        tLine       = ''
         oListLines  = len(oList)
         testRun     = self.app.testRun.get()
 
@@ -58,27 +59,34 @@ class Translator:
                 self.app.print('`red`translate break.`', True)
                 return "Error", True
             lineCurSize = len(oLine)
-            lineTempSize = len(oLineTemp)
+            lineTempSize = len(lineCum)
             cl += 1
             cs += lineCurSize
             # print("dasdsa ", lineTempSize, lineCurSize, settings['TRLEN'], ind, oListLines, oLineTemp, oLine)
             if (lineTempSize + lineCurSize >= settings['TRLEN']) or (ind == oListLines):
+
+                lineNCount = lineCum.count( '\n')
+
                 if testRun:
                     time.sleep(settings['testWait'])
+                    tLine = lineCum[0:-1]
                 else:
-                    lineNCount = oLineTemp.count( '\n')
-                    oLineTemp = self.lineTransate(oLineTemp, ind, listName)
-                    lineONCount = oLineTemp.count('\n') + 1
+                    tLine = self.lineTransate(lineCum, ind, listName)
+                    if tLine is None:
+                        tLine = lineCum
 
-                    if lineNCount > lineONCount:
-                        oLineTemp += '\n' * ( lineNCount - lineONCount)
+                lineONCount = tLine.count('\n') + 1
+
+                if lineNCount > lineONCount:
+                    tLine += '\n' * ( lineNCount - lineONCount)
 
                 percent = round((ind / oListLines) * 100, 1)
-                self.app.print(f'`rain{ round( percent)}`-=> {percent:5}%` `bold`{cf:2}/{tf}` ({lineTempSize:4}) [{listName:.48}]')
-                tList.append(oLineTemp)
-                oLineTemp = ""
+                self.app.print(f'`rain{ round( percent)}`-=> {percent:5}%` `bold`{cf:2}/{tf}` ({lineTempSize:4}) [{listName:.68}]')
+                tList.append( tLine)
+                lineCum = ''
+                tLine = ''
                 self.progressUpdate( tl, ts, tf, cl, cs, cf)
-            oLineTemp += oLine + '\n'
+            lineCum += oLine + '\n'
         return tList, False
 
 

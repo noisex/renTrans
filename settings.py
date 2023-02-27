@@ -1,4 +1,4 @@
-workFolder          = 'workFolder\\'  # noqa: E221
+workFolder          = 'c:\\RenTrans\\workFolder\\'  # noqa: E221
 
 settings = {
     'TRLEN'         : 4950,  # 4700 for GoogleTranslate
@@ -7,18 +7,18 @@ settings = {
     'engLine'       : '\\n{i}{size=-5}{color=#999}',
     'itemSize'      : '{size=-5}{color=#777}',
     'gameFolder'    : 'D:\\AdGames\\',
-    'gameFolderList': ['D:\\AdGames\\', 'E:\\!adgame done\\' ],
+    'gameFolderList': ['D:\\AdGames\\', 'c:\\AdGames\\' ],
     'backupFolder'  : 'Backup',
-    'folderList'    : ( 'tl', 'temp', 'ind', 'trans', 'tl_done'),
+    'folderList'    : ( 'tl', 'temp', 'trans', 'tl_done'),
     'workFolder'    : workFolder,  # noqa: E203
     'folderTL'      : workFolder + 'tl\\',
     'folderTEMP'    : workFolder + 'temp\\',
-    'folderIND'     : workFolder + 'ind\\',
+    # 'folderIND'     : workFolder + 'ind\\',
     'folderTRANS'   : workFolder + 'trans\\',
     'folderRPY'     : workFolder + 'tl_done\\',  # noqa: E203
     'folderGAME'    : workFolder + 'game\\',  # noqa: E203
     'folderLOGS'    : 'logs\\',
-    'folderSDK'     : 'renpy-sdk\\',
+    'folderSDK'     : 'c:\\RenTrans\\renpy-sdk\\',
     'extension': [
         '.rpyc',
         '.rpy',
@@ -71,7 +71,8 @@ settings = {
         'трахает'   : 'ебет',
         'трахнули'  : 'выебали',
         'трахаться' : 'ебаться',
-        'потрахаться' : 'поебаться',
+        'трахаются' : 'ебутся',
+        'потрахаться':'поебаться',
         'олухи'     : 'сиськи',
         'олухами'   : 'сиськами',
         'щенки'     : 'сиськи',
@@ -86,6 +87,8 @@ settings = {
         'мастурбирую'   : 'дрочу',
         'мастурбирует'  : 'дрочит',
         'мастурбируют'  : 'дрочат',
+        'мастурбируешь' : 'дрочишь',
+        'Ницца'         : 'классно',
     },
 
     'encList': [

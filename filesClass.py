@@ -1,19 +1,23 @@
 import os
 import shutil
+import json
 
 from settings import settings
 from guiClass import YoFrame
 
 app = YoFrame()
 
+folderWork  = settings['workFolder']
 folderTL    = settings['folderTL']  # 'workFolder\\tl\\'
 folderTEMP  = settings['folderTEMP']  # 'workFolder\\temp\\'
 folderTRANS = settings['folderTRANS']  # 'workFolder\\trans\\'
 folderRPY   = settings['folderRPY']  # 'workFolder\\tl_done\\'
-folderIND   = settings['folderIND']  # 'workFolder\\tl_done\\'
+# folderIND   = settings['folderIND']  # 'workFolder\\tl_done\\'
 rootPath    = os.path.abspath(os.getcwd()) + '\\'  # C:\GitHub\renTrans\
-folderSDK   = rootPath + settings['folderSDK']  # noqa: E221
+folderSDK   = settings['folderSDK']  # noqa: E221
 fileSkip    = settings['fileSkip']
+
+jData       = {}
 
 # logFileName = f"{settings['folderLOGS']}mainlog_{time.strftime('%Y.%m.%d')}.log"
 # logging.basicConfig(filename=logFileName, format='%(asctime)s %(message)s', datefmt='%Y.%m.%d %H:%M:%S', encoding='utf-8', level=logging.INFO)
@@ -122,10 +126,51 @@ def writeListToFile( fileName: str, fileText: list) -> None:
                 f.write(line + '\n')
 
 
+def loadDicFromFile( gameName: str) -> dict:
+    global jData
+    fileName = f"{rootPath}tagsLists\\{gameName}.json"
+    app.print(fileName)
+    if os.path.exists( fileName):
+        with open( fileName) as f:
+            jData = json.load(f)
+
+        # print( jData)
+
+        if gameName in jData:
+            return jData[gameName]
+
+
+def writeDicToFile( fileText: dict, gameName: str) -> None:
+    global jData
+    fileName = f"{rootPath}tagsLists\\{gameName}.json"
+
+    if len( jData) < 1:
+        app.print( "Empty jData. Try loaded from file.")
+        loadDicFromFile( gameName)
+
+    if gameName not in jData:
+        app.print("Not in json. First save.")
+        jData[gameName] = {}
+
+    for ind in fileText.keys():
+        item = fileText[ind]['item']
+
+        if (len(item) > 0) and (item != ind):
+            jData[gameName][ind] = item
+            app.print(f" -=> {ind} - {item} = {jData[gameName][ind]}")
+
+    if len( jData) >= 1:
+        smartDirs(fileName)
+        with open( fileName, 'w') as f:
+            json.dump( jData, f, ensure_ascii=False, indent=4)
+
+
 def smartDirs( fileName: str) -> None:
     try:
         os.makedirs(os.path.dirname(fileName))
     except FileExistsError:
+        pass
+    except FileNotFoundError:
         pass
 
 
@@ -142,9 +187,6 @@ def makeNewDirs():
     if not os.path.exists( folderTRANS):                                       # создаем дирректорию для файлов с переводом (если нужно)
         os.mkdir( folderTRANS)
         app.print( f'Папка {folderTRANS} - она просто нужна...')
-    if not os.path.exists( folderIND):                                       # создаем дирректорию для файлов с переводом (если нужно)
-        os.mkdir( folderIND)
-        app.print( f'Папка {folderIND} - она просто нужна...')
 
 
 # TODO rewrite listwalk vs listdir

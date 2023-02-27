@@ -1,14 +1,17 @@
 import os
+import  re
 import tkinter as tk
 from settings import settings
 # from renTrans import RenTrans
 
+reg = re.compile(r'^([\w\s]+)-.*')
 
 class GameRenpy:
     def __init__(self, app):
         # tk.Tk.__init__(self, *args, **kwargs)
         self.app = app
         self.gameName = None
+        self.gameNameClear = None
         self.path = None
         self.gamePath = None
         self.shortPath = None
@@ -25,6 +28,14 @@ class GameRenpy:
         self.backupFolderTemplate = 'Backup'
         self.gameFolder     = self.app.gameFolder.get()  #settings['gameFolder']  #'D:\\AdGames\\'
         self.backupFolder   = settings['backupFolder']  #Backup'
+
+        self.inFolderRPY = 0
+        self.inFolderRPC = 0
+        self.inFolderRPA = 0
+
+        self.inArchiveRPC = 0
+        self.inArchiveRPY = 0
+        self.inArchiveTTF = 0
 
     def makeNewBackupFolder( self):
         self.backupFolder = self.backupFolderTemplate
@@ -44,6 +55,13 @@ class GameRenpy:
 
     def listGameDClick( self):
         self.gameName       = self.app.listGames.selection_get()
+
+        ret = reg.search(self.gameName)
+        if ret is not None:
+            self.gameNameClear = ret.group(1)
+        else:
+            self.gameNameClear = self.gameName
+
         self.path           = self.gameFolder + self.gameName + '\\'
         self.gamePath       = self.gameFolder + self.gameName + '\\game\\'
         self.pathPython     = None
@@ -120,6 +138,17 @@ class GameRenpy:
     def getPath( self):
         self.checkSelectedGame()
         return self.path
+
+    def setGameNameBlock(self):
+        self.app.gameNameBlock['text'] = self.gameName
+
+        self.app.gmb11['text'] = self.inFolderRPY
+        self.app.gmb12['text'] = self.inFolderRPC
+        self.app.gmb13['text'] = self.inFolderRPA
+
+        self.app.gmb21['text'] = self.inArchiveRPY
+        self.app.gmb22['text'] = self.inArchiveRPC
+        self.app.gmb23['text'] = self.inArchiveTTF
 
 
 def main():

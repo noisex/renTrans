@@ -136,6 +136,7 @@ class YoTreeView(ttk.Treeview):
         self.arrow      = False
         self.sortColumn = '#0'
         self.selected   = None
+        self.data       = None
         self.app        = YoFrame()
         self._orig      = self._w + "_orig"
         self.tk.call("rename", self._w, self._orig)
@@ -151,7 +152,7 @@ class YoTreeView(ttk.Treeview):
         self.configure( style="mystyle.Treeview",  selectmode='browse')
 
     def _proxy(self, command, *args):
-        
+
         if command in "insert":  # , "delete", "replace"):
             itemText = args[3]
             if ( self.selected) and ( itemText in self.selected):
@@ -251,7 +252,7 @@ class YoTreeView(ttk.Treeview):
         self.sortColumn = headerID
         self.updateData()
         # print( headerID, headerData, self.treeGames.sortColumn)
-        
+
 
 class YoFrame(tk.Tk):
     _init = None
@@ -275,8 +276,8 @@ class YoFrame(tk.Tk):
         except FileExistsError:
             pass
 
-        logFileName = f"{settings['folderLOGS']}mainlog_{time.strftime('%Y.%m.%d')}.log"
-        logging.basicConfig(filename=logFileName, format='%(asctime)s %(message)s', datefmt='%Y.%m.%d %H:%M:%S', encoding='utf-8', level=logging.INFO)
+        # logFileName = f"{settings['folderLOGS']}mainlog_{time.strftime('%Y.%m.%d')}.log"
+        # logging.basicConfig(filename=logFileName, format='%(asctime)s %(message)s', datefmt='%Y.%m.%d %H:%M:%S', encoding='utf-8', level=logging.INFO)
 
         self.log     = logging
         self.testRun = tk.BooleanVar()
@@ -284,6 +285,9 @@ class YoFrame(tk.Tk):
 
         self.allExctract = tk.BooleanVar()
         self.allExctract.set( False)
+
+        self.varDecompile = tk.BooleanVar()
+        self.varDecompile.set( False)
 
         self.languages = [
             "auto",
@@ -309,7 +313,7 @@ class YoFrame(tk.Tk):
         self.gameSort.set( _gameSot[0])  # = sort by name
 
         self.minsize( 1300, 400)
-        self.geometry("1450x650")
+        self.geometry("1500x750")
 
         self.columnconfigure(3, weight=1, minsize=50)
         self.rowconfigure(   0, weight=2, pad=5)
@@ -336,12 +340,34 @@ class YoFrame(tk.Tk):
 
         frameCombo = ttk.Frame( groupGames)
         frameCombo.columnconfigure(0, weight=50)
-        frameCombo.grid( row=1, column=0, sticky='NWES', padx=0, pady=3)
+        frameCombo.grid( row=0, column=0, sticky='NWES', padx=0, pady=3)
 
-        self.lbGameSelected  = ttk.Label(    groupGames, text="None")  #, font=('Microsoft JhengHei UI', 12))
         self.cbGameFolder    = ttk.Combobox( frameCombo, textvariable=self.gameFolder, values=settings['gameFolderList'], state='readonly')
         self.cbGamesSort     = ttk.Combobox( frameCombo, textvariable=self.gameSort,   values=_gameSot,          width=8, state='readonly')
-        self.listGames       = YoListBox(    groupGames, selectmode=tk.NORMAL, height=4, width=32, )
+
+        self.gameNameBlock = tk.LabelFrame( groupGames, text='None')
+        self.gameNameBlock.grid(row=1, column=0, sticky="NWES", padx=3, pady=3)
+        self.gameNameBlock.columnconfigure(1, weight=50)
+        self.gameNameBlock.columnconfigure(2, weight=50)
+        self.gameNameBlock.columnconfigure(3, weight=50)
+
+        self.lbGameSelected  = ttk.Label(  self.gameNameBlock, text="None")  # , font=('Microsoft JhengHei UI', 12))
+
+        self.gmb01 = ttk.Label( self.gameNameBlock, text='RPY')
+        self.gmb02 = ttk.Label( self.gameNameBlock, text='RPC')
+        self.gmb03 = ttk.Label( self.gameNameBlock, text='RPA')
+
+        self.gmb10 = ttk.Label(self.gameNameBlock, text='folder:')
+        self.gmb11 = ttk.Label(self.gameNameBlock, text='0')
+        self.gmb12 = ttk.Label(self.gameNameBlock, text='0')
+        self.gmb13 = ttk.Label(self.gameNameBlock, text='0')
+
+        self.gmb20 = ttk.Label(self.gameNameBlock, text='achieve:')
+        self.gmb21 = ttk.Label(self.gameNameBlock, text='0')
+        self.gmb22 = ttk.Label(self.gameNameBlock, text='0')
+        self.gmb23 = ttk.Label(self.gameNameBlock, text='0')
+
+        self.listGames       = YoListBox(  groupGames, selectmode=tk.NORMAL, height=4, width=32, )
         self.btnGameRescan   = YoButton(   groupGames, text="rescan game list")  #, command= lambda: self.btnClickCTRL( 'btnGameRescan' ))#, command= gamesScan)
         self.btnExtract      = YoButton(   groupGames, text="extract rpyc/fonts")  #, command= buttonExtract)
         self.btnDecompile    = YoButton(   groupGames, text="decompile rpyc->rpy")  #, command= buttonDecompile)
@@ -351,9 +377,24 @@ class YoFrame(tk.Tk):
         self.btnCopyTL       = YoButton(   groupGames, text="copy tl files to translate")  #, command= copyTLStuff)
         # self.btnWordDic      = YoButton(   groupGames, text="word dic in tl folder")  # , command= lambda: makeRPYFiles())
 
-        self.lbGameSelected.grid(row=0, column=0, sticky="N", padx=3, pady=3)
         self.cbGameFolder.grid(  row=0, column=0, sticky='NWES', padx=3)
         self.cbGamesSort.grid(   row=0, column=1, sticky='NWES', padx=3)
+
+        # self.lbGameSelected.grid(row=0, column=0, sticky="N", padx=0, pady=0)
+        self.gmb01.grid(row=1, column=1, sticky="N", padx=0, pady=0)
+        self.gmb02.grid(row=1, column=2, sticky="N", padx=0, pady=0)
+        self.gmb03.grid(row=1, column=3, sticky="N", padx=0, pady=0)
+
+        self.gmb10.grid(row=2, column=0, sticky="E", padx=0, pady=0)
+        self.gmb11.grid(row=2, column=1, sticky="N", padx=0, pady=0)
+        self.gmb12.grid(row=2, column=2, sticky="N", padx=0, pady=0)
+        self.gmb13.grid(row=2, column=3, sticky="N", padx=0, pady=0)
+
+        self.gmb20.grid(row=3, column=0, sticky="E", padx=0, pady=0)
+        self.gmb21.grid(row=3, column=1, sticky="N", padx=0, pady=0)
+        self.gmb22.grid(row=3, column=2, sticky="N", padx=0, pady=0)
+        self.gmb23.grid(row=3, column=3, sticky="N", padx=0, pady=0)
+
         self.listGames.grid(     row=2, column=0, sticky="NWES", padx=3, pady=3, columnspan=1)
         self.btnGameRescan.grid( row=3, column=0, sticky='NWES')
         self.btnExtract.grid(    row=4, column=0, sticky='NWES')
@@ -442,10 +483,14 @@ class YoFrame(tk.Tk):
         self.btnTagCopy      = YoButton( btnPanel, text=">>>>")
         self.btnTagClear     = YoButton( btnPanel, text="<<<<")
         self.btnTempRepl     = YoButton( btnPanel, text="tag replace")
+        self.btnTagsSave     = YoButton( btnPanel, text="save tags")
+        self.btnTagsLoad     = YoButton( btnPanel, text="load tags")
 
         self.btnTagCopy.grid(  row=0, column=0, sticky='NWES', padx=0)
         self.btnTagClear.grid( row=1, column=0, sticky='NWES', padx=0)
         self.btnTempRepl.grid( row=2, column=0, sticky='NWES', padx=0)
+        self.btnTagsSave.grid( row=3, column=0, sticky='NWES', padx=0)
+        self.btnTagsLoad.grid( row=4, column=0, sticky='NWES', padx=0)
 
         #######################################################################################################
         #                                           4
@@ -457,7 +502,7 @@ class YoFrame(tk.Tk):
         groupComm.rowconfigure(   2, weight=2, pad=0)
 
         lbPanel         = ttk.Frame( groupComm)  #, background="#99fb99")
-        lbPanel.columnconfigure(6, weight=1, pad=5)
+        lbPanel.columnconfigure(7, weight=1, pad=5)
         lbPanel.columnconfigure(5, weight=0, pad=5)
         lbPanel.columnconfigure(4, weight=0, pad=5)
         lbPanel.grid( row=0, column=0, sticky='NWES')
@@ -471,8 +516,9 @@ class YoFrame(tk.Tk):
         self.lbEnd      = ttk.Label( lbPanel, text="", width=8)  #.grid(   row=1, sticky=tk.W, column=1)
         self.lbLine     = ttk.Label( lbPanel, text="", width=17)  #.grid(  row=0, sticky=tk.W, column=3)
         self.lbLines    = ttk.Label( lbPanel, text="", width=17)  #.grid( row=1, sticky=tk.W, column=3)
-        self.chTest     = ttk.Checkbutton( lbPanel, text="test Run", variable=self.testRun, onvalue=1, offvalue=0)
-        self.chAllEcxt  = ttk.Checkbutton( lbPanel, text="extract all files", variable=self.allExctract, onvalue=1, offvalue=0)
+        self.chTest     = ttk.Checkbutton( lbPanel, text="test Run",            variable=self.testRun,      onvalue=1, offvalue=0)
+        self.chAllEcxt  = ttk.Checkbutton( lbPanel, text="extract all files",   variable=self.allExctract,  onvalue=1, offvalue=0)
+        self.chDecompl  = ttk.Checkbutton( lbPanel, text="new decompiler",      variable=self.varDecompile, onvalue=1, offvalue=0)
 
         lbFrom          = ttk.Label(lbPanel, text="from:")
         llbTo           = ttk.Label(lbPanel, text="to:")
@@ -494,6 +540,8 @@ class YoFrame(tk.Tk):
         self.lbLines.grid(  row=1, column=3, sticky=tk.W)
         self.chTest.grid(   row=0, column=6, sticky=tk.W)
         self.chAllEcxt.grid(row=1, column=6, sticky=tk.W)
+        self.chDecompl.grid(row=0, column=7, sticky=tk.W)
+
         lbFrom.grid(        row=0, column=4, sticky=tk.E)
         llbTo.grid(         row=1, column=4, sticky=tk.E)
         self.optLang.grid(  row=0, column=5, sticky=tk.W)
@@ -515,7 +563,6 @@ class YoFrame(tk.Tk):
 
         self.treeGames = YoTreeView( groupTest)
         self.treeGames.grid( row=0, column=0, sticky='NWES')
-       
         self.treeGames["columns"] = ( 1, 2, 3, 4)
         self.treeGames.names      = ( "Name", "Date", "Type", "Size", 'New')
 
@@ -526,8 +573,8 @@ class YoFrame(tk.Tk):
         self.treeGames.column( 4,   width=75, minwidth=15, stretch=tk.NO, anchor=tk.N)
 
         data = []
-        data.append(( "Folder 2", "23-Jun-17 11:05", "File folder", '', 'qwerty', ""))
-        data.append(( "text.txt", "23-Jun-17 11:25", "TXT file", "1 KB", 'dasdas'))
+        data.append(( "Folder 2", "23-Jun-17 11:05", "File folder"))
+        data.append(( "text.txt", "23-Jun-17 11:25", "TXT file", "1 KB"))
         data.append(( "photo1.png", "23-Jun-17 11:28", "PNG file", "2.6 KB", '331'))
         data.append(( "photo2.png", "23-Jun-17 11:29", "PNG file", "3.2 KB", 312312))
         data.append(( "photo3.png", "23-Jun-17 11:30", "PNG file", "3.1 KB", 4444))
@@ -581,6 +628,8 @@ class YoFrame(tk.Tk):
         groupTags['fg']     = myBlack
         groupGames['fg']    = myBlack
         groupFiles['fg']    = myBlack
+        self.gameNameBlock['fg'] = myBlack
+        self.gameNameBlock['bg'] = myGreay
 
         style = ttk.Style( self)
         style.configure('TFrame', foreground=myBlack, background=myGreay)
@@ -599,7 +648,7 @@ class YoFrame(tk.Tk):
 
     def askClearFolder(self, filePath, txt):
         import filesClass as files
-        msgBox = mb.askquestion( 'Clear folder before run SDK?', txt) #, icon='question')
+        msgBox = mb.askquestion( 'Clear folder before run SDK?', txt)  #, icon='question')
         if msgBox == 'yes':
             files.clearFolder( filePath, '*')
 

@@ -1,0 +1,579 @@
+{
+    "StraitenedTimes": {
+        "[FatherT]": {
+            "item": "father"
+        },
+        "[BrotherT]": {
+            "item": "brother"
+        },
+        "[KidsT]": {
+            "item": "kids"
+        },
+        "[MotherT!c]": {
+            "item": "Mother"
+        },
+        "[OldSis.Name]": {
+            "item": "Jill"
+        },
+        "[OldSis.Alias]": {
+            "item": "Jill"
+        },
+        "[DaughterT]": {
+            "item": "daughter"
+        },
+        "[IncestuousT]": {
+            "item": "incestuous"
+        },
+        "[MotherlyT]": {
+            "item": "Motherly"
+        },
+        "[FamilyT]": {
+            "item": "family"
+        },
+        "[AdministrativeCenter.FullName]": {
+            "item": "Administrative Center"
+        },
+        "[YourMotherT]": {
+            "item": "your mother"
+        },
+        "[ParentT]": {
+            "item": "parent"
+        },
+        "[MomT!c]": {
+            "item": "Mom"
+        },
+        "[MyMotherT]": {
+            "item": "my mother"
+        },
+        "[BankManager.Name]": {
+            "item": "Andrea"
+        },
+        "[BankManager.Official]": {
+            "item": "Mrs. Reyes"
+        },
+        "[YourFatherT]": {
+            "item": "your father"
+        },
+        "[BankManager.Alias]": {
+            "item": "Bank Manager"
+        },
+        "[Mall.Name!c]": {
+            "item": "Mall"
+        },
+        "[PGrapher.Name]": {
+            "item": "Sam"
+        },
+        "[PGrapher.FullName]": {
+            "item": "Sam Kelley"
+        },
+        "[BankManager.Surname]": {
+            "item": "Reyes"
+        },
+        "[BankManager.FullName]": {
+            "item": "Andrea Reyes"
+        },
+        "[MyFatherT]": {
+            "item": "my Father"
+        },
+        "[SonT]": {
+            "item": "son"
+        },
+        "[BankManager.Department]": {
+            "item": "third group investment"
+        },
+        "[MyFatherT!c]": {
+            "item": "My Father"
+        },
+        "[BankManager.Spoken]": {
+            "item": "Mrs. Reyes"
+        },
+        "[FatherT!c]": {
+            "item": "father"
+        },
+        "[BankMngOffice.FullName]": {
+            "item": "Bank Manager Office"
+        },
+        "[YourSisterT]": {
+            "item": "your sister"
+        },
+        "[YoungSis.Name]": {
+            "item": "Lily"
+        },
+        "[YourFatherT!c]": {
+            "item": "Your Father"
+        },
+        "[MomT]": {
+            "item": "mom"
+        },
+        "[MotherT]": {
+            "item": "mother"
+        },
+        "[StepT]": {
+            "item": "step"
+        },
+        "[FLawyer.Alias]": {
+            "item": "Victoria the lawyer"
+        },
+        "[FGran.FullName]": {
+            "item": "Sophia Gardner"
+        },
+        "[FGran.Name]": {
+            "item": "Sophia"
+        },
+        "[GrandmotherT!c]": {
+            "item": "Grandmother"
+        },
+        "[GrandT]": {
+            "item": "grandma"
+        },
+        "[DadT]": {
+            "item": "dad"
+        },
+        "[RelativeT]": {
+            "item": "relative"
+        },
+        "[GrandmotherT]": {
+            "item": "grandmother"
+        },
+        "[GrandsonT]": {
+            "item": "grandson"
+        },
+        "[Mom.Name]": {
+            "item": "Lisa"
+        },
+        "[InLawT]": {
+            "item": "incest"
+        },
+        "[GranddaughterT]": {
+            "item": "grants"
+        },
+        "[SMom.Name]": {
+            "item": "Anna"
+        },
+        "[StepOS.Name]": {
+            "item": "Mary"
+        },
+        "[StepYS.Name]": {
+            "item": "Alexa"
+        },
+        "[Courtroom.FullName]": {
+            "item": "Town Hall - Courtroom"
+        },
+        "[FLawSecretary.Name]": {
+            "item": "Ren"
+        },
+        "[FLawyer.Name]": {
+            "item": "Victoria"
+        },
+        "[FLawSecretary.Spoken]": {
+            "item": "secretary"
+        },
+        "[FLawSecretary.Alias]": {
+            "item": "Ren"
+        },
+        "[FLawSecretary.FullName]": {
+            "item": "Yawen Ren"
+        },
+        "[ParentsT]": {
+            "item": "parents"
+        },
+        "[MyParentsT]": {
+            "item": "my parents"
+        },
+        "[Courtroom.Name]": {
+            "item": "Courtroom"
+        },
+        "[MyFamilyT]": {
+            "item": "my Family"
+        },
+        "[MyMomT]": {
+            "item": "my mom"
+        },
+        "[FamilyT!c]": {
+            "item": "family"
+        },
+        "[RelativesT!c]": {
+            "item": "Relatives"
+        },
+        "[Mom.Surname]": {
+            "item": "Gardner"
+        },
+        "[LitTeacher.Name]": {
+            "item": "Emmanuelle"
+        },
+        "[YoungSis.Nickname]": {
+            "item": "Lily"
+        },
+        "[SisterT]": {
+            "item": "sister"
+        },
+        "[LitTeacher.Alias]": {
+            "item": "Lit Teacher"
+        },
+        "[YoungSis.Alias]": {
+            "item": "Lil"
+        },
+        "[Principal.Official]": {
+            "item": "Mrs. Pitt"
+        },
+        "[IncestT]": {
+            "item": "Incest"
+        },
+        "[Principal.Occupation]": {
+            "item": "principal"
+        },
+        "[LitTeacher.FullName]": {
+            "item": "Emmanuelle"
+        },
+        "[YourMotherT!c]": {
+            "item": "Your Mother"
+        },
+        "[SonT!c]": {
+            "item": "Son"
+        },
+        "[HalfT]": {
+            "item": "half"
+        },
+        "[SistersT]": {
+            "item": "sisters"
+        },
+        "[MommyT!c]": {
+            "item": "Mommy"
+        },
+        "[MommyT]": {
+            "item": "mommy"
+        },
+        "[MotelManager.Name]": {
+            "item": "Darna"
+        },
+        "[Mom.Age]": {
+            "item": "41"
+        },
+        "[OwnBloodT]": {
+            "item": "own blood"
+        },
+        "[ChildT]": {
+            "item": "child"
+        },
+        "[MAunt.Alias]": {
+            "item": "aunt Kate"
+        },
+        "[SMom.FullName]": {
+            "item": "Anna NoiseX"
+        },
+        "[FamiliesT]": {
+            "item": "families"
+        },
+        "[DaughtersT]": {
+            "item": "daughters"
+        },
+        "[AuntyT]": {
+            "item": "aunty"
+        },
+        "[MAunt.Name]": {
+            "item": "Kate"
+        },
+        "[AuntT]": {
+            "item": "aunt"
+        },
+        "[Mom.Alias]": {
+            "item": "Lisa"
+        },
+        "[HalfT!c]": {
+            "item": "Half"
+        },
+        "[BloodRelatedT]": {
+            "item": "blood related"
+        },
+        "[OldSis.Nickname]": {
+            "item": "Jill"
+        },
+        "[SiblingsT]": {
+            "item": "siblings"
+        },
+        "[SisT]": {
+            "item": "sis"
+        },
+        "[Mom.FullName]": {
+            "item": "Lisa Garbner"
+        },
+        "[StepT!c]": {
+            "item": "Step"
+        },
+        "[NephewT]": {
+            "item": "nephew"
+        },
+        "[AuntyT!c]": {
+            "item": "aunty"
+        },
+        "[AuntT!c]": {
+            "item": "aunt"
+        },
+        "[KinT]": {
+            "item": "kin"
+        },
+        "[NiecesT]": {
+            "item": "nieces"
+        },
+        "[MyMotherT!c]": {
+            "item": "My Mother"
+        },
+        "[MAunt.FullName]": {
+            "item": "Kate Jensen"
+        },
+        "[AuntsT]": {
+            "item": "aunts"
+        },
+        "[NieceT]": {
+            "item": "niece"
+        },
+        "[MAunt.Occupation]": {
+            "item": "flight attendant"
+        },
+        "[ChildrenT]": {
+            "item": "children"
+        },
+        "[SMom.Alias]": {
+            "item": "mom"
+        },
+        "[ActionShowT]": {
+            "item": "action show"
+        },
+        "[RomanceShowT]": {
+            "item": "romance show"
+        },
+        "[PornoTvT]": {
+            "item": "Porno Tv"
+        },
+        "[MotelManager.Alias]": {
+            "item": "Motel Manager"
+        },
+        "[GrandmaT]": {
+            "item": "grandma"
+        },
+        "[NeighCheerl.Name]": {
+            "item": "Brigitte"
+        },
+        "[NeighBoy.Name]": {
+            "item": "Jason"
+        },
+        "[MothersT]": {
+            "item": "mothers"
+        },
+        "[SonsT]": {
+            "item": "sons"
+        },
+        "[TwinT]": {
+            "item": "twin"
+        },
+        "[NeighborsT]": {
+            "item": "neighbors"
+        },
+        "[NeighMom.Name]": {
+            "item": "Lauren"
+        },
+        "[NeighMom.Surname]": {
+            "item": "Larsen"
+        },
+        "[NeighCheerl.Alias]": {
+            "item": "Brigitte"
+        },
+        "[NeighborT]": {
+            "item": "neighbor"
+        },
+        "[NeighMom.Alias]": {
+            "item": "Lauren"
+        },
+        "[Daughter]": {
+            "item": "daughter"
+        },
+        "[IncestuousT!c]": {
+            "item": "Incestous"
+        },
+        "[DaughterT!c]": {
+            "item": "daughter"
+        },
+        "[SisT!c]": {
+            "item": "Sis"
+        },
+        "[YourSisterT!c]": {
+            "item": "Your Sister"
+        },
+        "[YoungSis.Nickname!c]": {
+            "item": "Lily"
+        },
+        "[OldSis.Alias!c]": {
+            "item": "Jill"
+        },
+        "[OSfriend.Alias]": {
+            "item": "Mia"
+        },
+        "[OSfriend.FullName]": {
+            "item": "Mia Sim"
+        },
+        "[SisterT!c]": {
+            "item": "Sister"
+        },
+        "[BroT]": {
+            "item": "bro"
+        },
+        "[YourFamilyT!c]": {
+            "item": "Your Family"
+        },
+        "[YourFamilyT]": {
+            "item": "your family"
+        },
+        "[MySistersT]": {
+            "item": "my sisters"
+        },
+        "[Mall.Name]": {
+            "item": "mall"
+        },
+        "[XShopOwner.Name]": {
+            "item": "Julia"
+        },
+        "[PGrapher.Surname]": {
+            "item": "Kelley"
+        },
+        "[XShopOwner.Alias]": {
+            "item": "Julia"
+        },
+        "[Principal.Surname]": {
+            "item": "Pitt"
+        },
+        "[Principal.Occupation!c]": {
+            "item": "Principal"
+        },
+        "[Principal.Name]": {
+            "item": "Helena"
+        },
+        "[SluttyMaid.Name]": {
+            "item": "Danielle"
+        },
+        "[Chrct.FullName]": {
+            "item": "Briigitte Larsen"
+        },
+        "[SMom.Surname]": {
+            "item": "NoiseX"
+        },
+        "[RelativesT]": {
+            "item": "relatives"
+        },
+        "[BrothersT]": {
+            "item": "brothers"
+        },
+        "[CousinsT]": {
+            "item": "cousins"
+        },
+        "[GransT]": {
+            "item": "grans"
+        },
+        "[BrotherT!c]": {
+            "item": "brother"
+        },
+        "[StepYS.Alias]": {
+            "item": "Alexa"
+        },
+        "[Mall.FullName]": {
+            "item": "Mall FullName"
+        },
+        "[YoungSis.Name!c]": {
+            "item": "Lily"
+        },
+        "[BankManager.Occupation]": {
+            "item": "bank manager"
+        },
+        "[BankMngOffice.Name]": {
+            "item": "Manager Office"
+        },
+        "[StepOS.Age]": {
+            "item": "20"
+        },
+        "[StepYS.Age]": {
+            "item": "18"
+        },
+        "[BroT!c]": {
+            "item": "bro"
+        },
+        "[OldSis.Name!c]": {
+            "item": "Jill"
+        },
+        "[YoungSis.Alias!c]": {
+            "item": "Lil"
+        },
+        "[Mom.Official]": {
+            "item": "Mrs. Gardner"
+        },
+        "[AuntiesT]": {
+            "item": "aunties"
+        },
+        "[NephewsT]": {
+            "item": "nephews"
+        },
+        "[Principal.Official!c]": {
+            "item": "Mrs. Pitt"
+        },
+        "[StepOS.Alias]": {
+            "item": "Mary"
+        },
+        "[MAunt.Alias!c]": {
+            "item": "Aunt Kate"
+        },
+        "[MothersT!c]": {
+            "item": "Mothers"
+        },
+        "[MomT!u]": {
+            "item": "MOM"
+        },
+        "[MomsT]": {
+            "item": "mmoms"
+        },
+        "[SistersT!c]": {
+            "item": "Sisters"
+        },
+        "[NanaT!c]": {
+            "item": "Jason"
+        },
+        "[FGran.Alias]": {
+            "item": "Grandma Sophia"
+        },
+        "[FGran.Alias!c]": {
+            "item": "Grandma Sophia"
+        },
+        "[FLawyer.Alias!c]": {
+            "item": "Victoria the lawyer"
+        }
+    },
+    "YuriUniversity": {
+        "[name]": {
+            "item": "name]"
+        },
+        "[friend]": {
+            "item": "friend]"
+        },
+        "[h.nickname]": {
+            "item": "h.nickname]"
+        },
+        "[pc.first_anal_play]": {
+            "item": "pc.first_anal_play]"
+        },
+        "[pc.first_finger_give]": {
+            "item": "pc.first_finger_give]"
+        },
+        "[pc.first_finger_receive]": {
+            "item": "pc.first_finger_receive]"
+        },
+        "[em_name]": {
+            "item": "em_name]"
+        },
+        "[librarian_name]": {
+            "item": "librarian_name]"
+        },
+        "[mia_name_guess]": {
+            "item": "mia_name_guess]"
+        },
+        "[kiss_count]": {
+            "item": "kiss_count]"
+        }
+    }
+}
