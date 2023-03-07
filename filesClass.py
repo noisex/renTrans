@@ -127,25 +127,32 @@ def writeListToFile( fileName: str, fileText: list) -> None:
 
 
 def loadDicFromFile( gameName: str) -> dict:
+    if not gameName:
+        app.print( "`red`Error`. No game selected!")
+        return
+
     global jData
     fileName = f"{rootPath}tagsLists\\{gameName}.json"
-    app.print(fileName)
+
     if os.path.exists( fileName):
         with open( fileName) as f:
             jData = json.load(f)
 
-        # print( jData)
-
         if gameName in jData:
+            app.print(f"Loaded json with `navy`{len(jData[gameName])}` records from [`bold`{gameName}.json`] file. ")
             return jData[gameName]
 
 
 def writeDicToFile( fileText: dict, gameName: str) -> None:
+    if not gameName:
+        app.print( "`red`Error`. No game selected!")
+        return
+
     global jData
     fileName = f"{rootPath}tagsLists\\{gameName}.json"
 
     if len( jData) < 1:
-        app.print( "Empty jData. Try loaded from file.")
+        app.print( "Empty jData. Try loaded from file...")
         loadDicFromFile( gameName)
 
     if gameName not in jData:
@@ -157,10 +164,11 @@ def writeDicToFile( fileText: dict, gameName: str) -> None:
 
         if (len(item) > 0) and (item != ind):
             jData[gameName][ind] = item
-            app.print(f" -=> {ind} - {item} = {jData[gameName][ind]}")
+            # app.print(f" -=> {ind} - {item} = {jData[gameName][ind]}")
 
     if len( jData) >= 1:
         smartDirs(fileName)
+        app.print( f"Saved json with `navy`{len( jData[gameName])}` records in [`bold`{gameName}.json`] file. ")
         with open( fileName, 'w') as f:
             json.dump( jData, f, ensure_ascii=False, indent=4)
 
@@ -212,26 +220,23 @@ def clearFolder( dirName: str, fileExt='.rpy' ):
         app.print( f'`red`Error.` Path [`bold`{dirName}`] not exists.')
 
 
-# def readCSVToDic( fileName: str) -> dict:
-#     data = pd.read_csv(fileName + ".csv", sep=sep)
-#     # data.
-#     print(data)
-#
-#
-# def readCSVToList( fileName: str) -> dict:
-#     data = pd.read_csv(fileName + ".csv", sep=sep)
-#     # data.
-#     print(data)
+def copyMenuToBackUp( game, filePath, fileBackPath=None):
+    fileNewName = filePath.replace( f'{game.getPathGame()}', '')
+
+    if fileBackPath is None:
+        fileBackPath = f'{game.getPath()}\\{game.getBackupFolder()}\\game\\{os.path.dirname( fileNewName)}\\'
+    else:
+        fileBackPath = f'{game.getPath()}\\{fileBackPath}\\{os.path.dirname( fileNewName)}\\'
+
+    fileBackFile = fileBackPath + os.path.basename( filePath)
+    os.makedirs( fileBackPath, exist_ok=True)
+    shutil.copy2( filePath, fileBackFile)  # complete target filename given
 
 
-# def writeDictToFile( fileName: str, fileText: dict) -> None:
-#     listLen = len(fileText)
-#     if listLen >= 1:
-#         smartDirs(fileName)
-#         header = ['id', 'text']
-#         data = pd.DataFrame(fileText, columns=header)
-#         data.to_csv(fileName + '.csv', sep=sep, index=False)
-#
-#         # with open(fileName, 'w', encoding='utf-8') as f:
-#         #     for ind, line in enumerate( fileText, 1):
-#         #         f.write( line + '\n')
+def main():
+    pass
+
+
+if __name__ == '__main__':
+    main()
+

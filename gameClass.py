@@ -4,7 +4,18 @@ import tkinter as tk
 from settings import settings
 # from renTrans import RenTrans
 
-reg = re.compile(r'^([\w\s]+)-.*')
+# reMenu      = 'menu:'
+# reSpace     = r'\s{4}'
+reNonSpace  = r'\S+'
+reFix       = re.compile(r'\b\w{3,14}\b')  # ищем слова 4+ для замены по словарю
+reg         = re.compile(r'^([\w\s]+)-.*')
+
+reBrackets  = [
+    '(\\[.+?\\])',          # квадратные скобки  - []
+    '({.+?})',              # фигурные скобки    - {}
+    '(\\%\\(.+?\\))'        # процент со скобкой - %()
+]
+
 
 class GameRenpy:
     def __init__(self, app):
@@ -149,6 +160,108 @@ class GameRenpy:
         self.app.gmb21['text'] = self.inArchiveRPY
         self.app.gmb22['text'] = self.inArchiveRPC
         self.app.gmb23['text'] = self.inArchiveTTF
+
+    def stringLevel( self, oLine: str):
+        """back indent level of current line in spaces/4"""
+        return int( re.search( reNonSpace, oLine).start()) / 4
+        # return len( re.findall( reSpace, oLine))
+
+    def stringLevel4( self, oLine: str) -> int:
+        """back indent level of current line in spaces"""
+        return re.search(reNonSpace, oLine).start()
+
+    def correctWordDic( self,fix: str) -> str:
+        fixRE   = re.findall( reFix, fix)
+        wordDic = settings['wordDic']
+
+        for item in fixRE:
+            itemLow = item.lower()
+
+            if itemLow in wordDic:
+                self.wordDicCount += 1
+
+                if item.islower():
+                    itemRET = wordDic[itemLow]
+                elif item.isupper():
+                    itemRET = wordDic[itemLow].upper()
+                elif item.istitle():
+                    itemRET = wordDic[itemLow].capitalize()
+                else:
+                    itemRET = wordDic[itemLow]
+
+                fix = re.sub( fr'\b{item}\b', itemRET, fix)
+                # app.log.error(f' wordDic: [{fileName}] = [{ fix.strip()}]')
+        return fix
+
+    def correctOpenBrackets( self, tLine: str, oLine: str) -> str:
+        """
+        поиск и замена нечетных квадратных скобок
+        """
+        ref = re.findall( r'[\[\]]', tLine)
+        if len( ref) % 2 != 0:
+            self.app.print( '`red`WARNING`:')
+            self.app.print( f'`bold`Open brackets` in (`bold`{tLine}`).')
+            self.app.print( f'Original string: (`bold`{oLine}`)')
+
+            ref = re.findall( r'\S*', tLine)
+            for rel in ref:
+                if '[' in rel and ']' not in rel:
+                    tLine = tLine.replace( rel, rel + ']')
+                elif ']' in rel and '[' not in rel:
+                    tLine = tLine.replace(rel, '[' + rel)
+
+            self.app.print( f'I try to fix it: (`bold`{tLine}`)')
+        return tLine
+
+    def correctTranslate( self, fix):                                           # корректировка всяких косяков первода, надо перписать...
+        """
+        корректировка всяких косяков перевода, надо переписать...
+        """
+        # %(РС - %(p_name)s
+        fix = re.sub( r'([-~])$', r'.', fix)                                    # -" => ."
+        fix = re.sub( '^да', 'Да', fix)
+        fix = re.sub( r'(\s+)([.!?,])', r'\2', fix)                             # убираем парные+ пробелы и пробелы перед знаком препинания
+
+        fix = re.sub( r'К[аА][кК][иИоОаА].+([-.!?])', r'Что\1', fix)            # Какие -> Что
+        fix = re.sub( r'Большой([.!?])', r'Отлично\1', fix)
+        fix = re.sub( r'Прохладный([.!?])', r'Здорово\1', fix)
+
+        fix = re.sub( r'([A-ZА-Я])-([а-яА-Я])(\w+)', r'\2-\2\3', fix)           # T-Спасибо -=> С-Спасибо
+        fix = re.sub( r'(\d+)\W*%', r'\1\%', fix)                               # 123% => 123\%
+
+        fix = fix.replace( r'\"', r"'")
+        fix = fix.replace( r'"', r"'")
+
+        fix = fix.replace( '% (', ' %(')
+        # fix = fix.replace( '} ', '}')
+        # fix = fix.replace( ' {/', '{/')
+        fix = re.sub( r'\\$', '', fix)
+
+        fix = re.sub( r'\)\s*[ысs]', r'\)s', fix, flags=re.I)
+        fix = re.sub( r'\\ n', r'\\n', fix, flags=re.I)
+        fix = re.sub( '{я[ }]', '{i} ', fix, flags=re.I)
+        # if fix.find( 'Какие') >= 0:
+        #     app.print( str( fix))
+        return fix
+
+    def correctTagsBrackets( self, tLine: str, oLine: str):
+        """
+        замена кривых, т.е. всех, переведенных тегов на оригинальные
+        """
+        for re_find in reBrackets:
+            tResultSC = re.findall(re_find, tLine)                              # ищем теги в скобках в оригинальной строке
+
+            if tResultSC:
+                oResultSC = re.findall(re_find, oLine)                          # ищем теги в скобках в переведенной строке
+                for i, value in enumerate( oResultSC):
+
+                    try:
+                        # if tResultSC[i] != '[123]':
+                        tLine = tLine.replace( tResultSC[i], value)              # заменяем переведенные кривые теги оригинальными по порядку
+                    except IndexError:
+                        self.app.print( f'`red`IndexError` with tag replace [{tResultSC}] in line [{tLine}]')
+
+        return tLine   #.replace( '[123]', '')
 
 
 def main():

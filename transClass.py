@@ -95,6 +95,7 @@ class RPAClass:
         self.app        = app
         self.game       = game
         self.extension  = settings['extension']
+        self.extracts   = settings['extracts']
 
     def rpaExtractFiles(self, fileList: dict, pathGame: str) -> None:
         for fileName in fileList:
@@ -105,13 +106,14 @@ class RPAClass:
                 self.app.print( f'`red`ERROR.` [`bold`{fileName}`]: {error}')
 
     def rpaGetListFilesExt(self, fileList: dict) -> dict:
-        dicRPA = {}
+        dicRPA      = {}
+        extractes   = self.app.extract.get()
+
         for fileName in fileList:
             try:
                 archNames   = UnRPA(fileName).list_files()
-
                 for fileArchName in archNames:
-                    if ( self.app.allExctract.get()) or ( os.path.splitext( fileArchName)[1].lower() in self.extension):
+                    if ( self.app.allExctract.get()) or ( os.path.splitext( fileArchName)[1].lower() in self.extracts[extractes]):
                         if fileName not in dicRPA:
                             dicRPA[fileName] = []
                         dicRPA[fileName].append( fileArchName)
@@ -158,47 +160,3 @@ def main():
 if __name__ == '__main__':
     main()
 
-    #
-    # def listTranslate( self, oList: list, listName: str) -> tuple:
-    #     tList       = []
-    #     indList     = []
-    #     oLineTemp   = ''
-    #     oListLines  = len( oList)
-    #
-    #     for ind, sepLine in enumerate( oList, 1):
-    #
-    #         if not getattr( self.threadSTOP['trans'], "do_run"):
-    #             self.app.print( '`red`Translate break. :(`', True)
-    #             return "Error", True
-    #
-    #         # lineCurSize      = len( sepLine.encode("utf-8"))
-    #         # lineTempSize     = len( oLineTemp.encode("utf-8"))
-    #         lineCurSize      = len( sepLine)
-    #         lineTempSize     = len( oLineTemp)
-    #         self.currentLine += 1
-    #         self.currentSize += lineCurSize
-    #
-    #         if ( lineTempSize + lineCurSize >= settings['TRLEN']) or ( ind == oListLines):
-    #             if self.app.testRun.get():
-    #                 time.sleep( settings['testWait'])
-    #             else:
-    #                 oLineTemp = self.lineTransate( oLineTemp, ind, listName)
-    #
-    #             percent = ( ind / oListLines) * 100
-    #             rent.print( f'-=> `rain{ round(percent)}`{ round(percent, 1):5}%` `bold`{self.currentFile:2}/{self.totalFiles}` ({lineTempSize:4}) [{listName:.60}]')
-    #
-    #             olList = oLineTemp.split( '\n')
-    #
-    #             for i, iid in enumerate( indList):
-    #                 tList.append( f'{iid}#{olList[i]}')
-    #             oLineTemp = ""
-    #             indList = []
-    #             self.progressUpdate()
-    #
-    #         sepLine = sepLine.split('#', 1)
-    #         if len( sepLine) == 2:
-    #             indList.append(int(sepLine[0]))
-    #             oLine = sepLine[1]
-    #
-    #             oLineTemp += oLine + '\n'
-    #     return tList, False

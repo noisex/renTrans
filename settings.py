@@ -5,11 +5,13 @@ settings = {
     'testWait'      : 0.07,
     'engTRANS'      : False,
     'engLine'       : '\\n{i}{size=-5}{color=#999}',
-    'itemSize'      : '{size=-5}{color=#777}',
-    'gameFolder'    : 'D:\\AdGames\\',
+    'itemSize'      : '{size=-5}{color=#777} ',
+    'gameFolder'    :  'D:\\AdGames\\',
     'gameFolderList': ['D:\\AdGames\\', 'c:\\AdGames\\' ],
+
     'backupFolder'  : 'Backup',
     'folderList'    : ( 'tl', 'temp', 'trans', 'tl_done'),
+
     'workFolder'    : workFolder,  # noqa: E203
     'folderTL'      : workFolder + 'tl\\',
     'folderTEMP'    : workFolder + 'temp\\',
@@ -25,6 +27,45 @@ settings = {
         '.ttf',
         '.otf'
     ],
+
+    'extracts': {
+        'scripts' : [
+            '.rpyc',
+            '.rpy' ],
+        'fonts' : [
+            '.ttf',
+            '.otf' ],
+        'scripts+fonts' : [
+            '.rpyc',
+            '.rpy',
+            '.ttf',
+            '.otf'],
+        'audio' : [
+            '.wav',
+            '.mp3',
+            '.ogg' ],
+        'images' : [
+            '.gif',
+            '.webp',
+            '.jpeg',
+            '.png',
+            '.jpg' ],
+        'video': [
+            '.mp4',
+            '.avi',
+            '.mov',
+            '.webm'],
+        'images+video' : [
+            '.gif',
+            '.webp',
+            '.jpeg',
+            '.png',
+            '.mp4',
+            '.avi',
+            '.mov',
+            '.webm',
+            '.jpg' ],
+    },
 
     'fileSkip': [
         'gui.rpy',

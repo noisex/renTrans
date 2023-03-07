@@ -299,6 +299,19 @@ class YoFrame(tk.Tk):
             "ko",
         ]
 
+        self.extarctes = [
+            "scripts",
+            "fonts",
+            "audio",
+            "images",
+            "video",
+            "scripts+fonts",
+            "images+video",
+        ]
+
+        self.extract = tk.StringVar()
+        self.extract.set( self.extarctes[5])
+
         self.lang = tk.StringVar()
         self.lang.set( self.languages[1])
 
@@ -522,8 +535,9 @@ class YoFrame(tk.Tk):
 
         lbFrom          = ttk.Label(lbPanel, text="from:")
         llbTo           = ttk.Label(lbPanel, text="to:")
-        self.optLang    = ttk.Combobox(  lbPanel, textvariable=self.lang,  values=self.languages, width=5, state='readonly')
-        self.optTrans   = ttk.Combobox(  lbPanel, textvariable=self.trans, values=self.languages, width=5, state='readonly')
+        self.optLang    = ttk.Combobox(  lbPanel, textvariable=self.lang,    values=self.languages, width=5, state='readonly')
+        self.optTrans   = ttk.Combobox(  lbPanel, textvariable=self.trans,   values=self.languages, width=5, state='readonly')
+        self.optExtrs   = ttk.Combobox(  lbPanel, textvariable=self.extract, values=self.extarctes, width=5, state='readonly')
 
         self.pbTotal    = YoProgress( groupComm, mode="determinate", length=200, rootTitle=self)  # style='lbPBar')
         self.textLogsSCy = ttk.Scrollbar(groupComm, orient=tk.VERTICAL)
@@ -546,6 +560,7 @@ class YoFrame(tk.Tk):
         llbTo.grid(         row=1, column=4, sticky=tk.E)
         self.optLang.grid(  row=0, column=5, sticky=tk.W)
         self.optTrans.grid( row=1, column=5, sticky=tk.W)
+        self.optExtrs.grid( row=1, column=7, sticky=tk.EW)
 
         self.pbTotal.grid(  row=1, column=0, sticky="NWSE", padx=5, pady=5, columnspan=2)
         self.textLogs.grid( row=2, column=0, sticky="NWSE", padx=5, pady=5)
@@ -718,6 +733,9 @@ class YoFrame(tk.Tk):
         #     self.labelsSet( totalLine, totalSize)
 
     def print( self, line, newLine=False, lastLine=False, tag=None):
+        if not self.focus_get():
+            return
+
         self.textLogs['state'] = tk.NORMAL
         if newLine:
             self.textLogs.insert( tk.END, f'[{time.strftime("%H:%M:%S")}]\n')
