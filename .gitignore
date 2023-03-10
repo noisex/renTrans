@@ -1,8 +1,6 @@
 .gitignore
 /venv/*
-/renpy-sdk/*
 *__pycache__*
 /test/*
 /.idea/*
 /logs/*
-tagsList*

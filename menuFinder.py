@@ -8,23 +8,20 @@ reItem      = re.compile( r'^\s*\"(.+?)\".*?:')
 reVars      = re.compile( r'\$\s*([\w-]+\s*[-+=]+\s*(?:True|False|[-+\d]+))')
 
 
-def itemClearFromOld( line: str, strReplace: str) -> str:
+def itemClearFromOld( line: str) -> str:
     """очищаем строку от добавленных ранее подсказок"""
     itemStart = line.find( settings['itemSize'])
     if itemStart > 0:
-        itemEnd = line.find( strReplace)
-        strFull = line[0:itemStart] + line[itemEnd:]
-    else:
-        strFull = line
-    return strFull
+        line = line[0:itemStart]  # + line[itemEnd:]
+    return line
 
 
-def menuFindVars( app, game):
+def menuFindVars( _event, game):
     pathGame = game.getPathGame()
     if not pathGame:
         return
 
-    app.print( f'Find menu with variables ( backUp in [`bold`{game.backupFolder}`])...', True)
+    game.print( f'Find menu with variables ( backUp in [`bold`{game.backupFolder}`])...', True)
 
     pathGame        = game.getPathGame()
     itemsCountTotal = 0
@@ -67,18 +64,14 @@ def menuFindVars( app, game):
                                 items.pop()
                                 # просто обнуляем, если не нашли переменных в менюшке
                                 if len(lastItem['var']) > varStrLen:
-
-                                    if '":' in lastItem['str']:  # если вконце меню есть ИФ или еще что-то
-                                        strReplace = '":'
-                                    else:
-                                        strReplace = '" '
                                     # lineValue = re.sub( r'[\[\]]', '.', lineValue))
-                                    lastItem['str']    = itemClearFromOld( lastItem['str'], strReplace)
-                                    itemsReplace      += 1
-                                    itemsReplaceTotal += 1
-                                    listText[lastItem['no']] = lastItem['str'].replace(strReplace, lastItem['var'][0:160] + strReplace)
-                                    # print( listText[lastItem['no']])
-                                    # print(f"->   {item['ind']:3}. [{currentLevel}>{lastItem['lvl']}] L={len(items)} - {line} -=> {lastItem['str']} {lastItem['var']}")
+                                    itemsReplace            += 1
+                                    itemsReplaceTotal       += 1
+                                    # рубим строку по последней кавычке [0-до, 1-кавычка, 2-после]
+                                    pieceOfString           = lastItem['str'].rpartition( '"')
+                                    lastItem['str']         = itemClearFromOld( pieceOfString[0])
+                                    # вставляем между кусками строки свое ( 0-наше-1-2)
+                                    listText[lastItem['no']]= f'{pieceOfString[0]}{lastItem["var"][0:160]}"{pieceOfString[2]}'
                             else:
                                 break
                 # чекаем, это элемент меню, создаем новый итем и пихаем в стэк
@@ -100,14 +93,14 @@ def menuFindVars( app, game):
                 newBackup = False
                 game.makeNewBackupFolder()
 
-            app.print( f'`green`{itemsReplace:3}` items from `green`{itemsCount:4}` replaced with [`red`{itemVars:3}` vars] in [`bold`{fileValue["fileShort"]}`]')
+            game.print( f'`green`{itemsReplace:3}` items from `green`{itemsCount:4}` replaced with [`red`{itemVars:3}` vars] in [`bold`{fileValue["fileShort"]}`]')
             files.copyMenuToBackUp( game, fileName)
             files.writeListToFile(fileName, listText)
 
     if itemsReplaceTotal > 0:
-        app.print(f'Total: `bold`{itemsCountTotal}` menu items found, `bold`{itemsReplaceTotal}` was replaced, with `bold`{itemVarsTotal}` vars.')
+        game.print(f'Total: `bold`{itemsCountTotal}` menu items found, `bold`{itemsReplaceTotal}` was replaced, with `bold`{itemVarsTotal}` vars.')
     else:
-        app.print( '`bold`No vars to replace was found...`', True)
+        game.print( '`bold`No vars to replace was found...`', True)
 
 
 def main():
@@ -116,4 +109,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

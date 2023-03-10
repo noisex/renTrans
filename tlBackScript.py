@@ -7,7 +7,7 @@ reTL = re.compile( r'^# .*:(\d+)')
 
 
 # todo rename old rus files
-def backTLtoScriptClick( app, game):
+def backTLtoScriptClick( game):
     pathGame = game.getPathGame()
     if not pathGame:
         return
@@ -41,11 +41,11 @@ def backTLtoScriptClick( app, game):
             if needBackup:
                 needBackup = False
                 game.makeNewBackupFolder()
-                app.print( " ")
+                game.print( " ")
             files.copyMenuToBackUp( game, fileScript)
             files.writeListToFile( fileScript, scriptLines)
-            app.print( f"`navy`{lineCount:5}` replaces in [`bold`{fileScript}`]")
-    app.print( f"`green`{fileCount:5}` files done.")
+            game.print( f"`navy`{lineCount:5}` replaces in [`bold`{fileScript}`]")
+    game.print( f"`green`{fileCount:5}` files done.")
 
 
 def main():
@@ -54,4 +54,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

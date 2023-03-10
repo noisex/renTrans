@@ -20,13 +20,14 @@ reBrackets  = [
 class GameRenpy:
     def __init__(self, app):
         # tk.Tk.__init__(self, *args, **kwargs)
-        self.app = app
-        self.gameName = None
+        self.app        = app
+        self.print      = app.print
+        self.gameName   = None
         self.gameNameClear = None
-        self.path = None
-        self.gamePath = None
-        self.shortPath = None
-        self.gameTLRUS = None
+        self.path       = None
+        self.gamePath   = None
+        self.shortPath  = None
+        self.gameTLRUS  = None
         self.pathPython = None
         self.totalLines = 0
         self.totalSizes = 0
@@ -87,11 +88,11 @@ class GameRenpy:
                     self.pathPython = tryName
 
             if not self.pathPython:
-                self.app.print( f'`navy`Warning:` not found python for Windows in folder [`bold`{pathPython}`]')
+                self.print( f'`navy`Warning:` not found python for Windows in folder [`bold`{pathPython}`]')
 
         except BaseException as e:
-            self.app.print( f'`red`ERROR:` cant found python libs in game folder: [`bold`{pathPython}`]')
-            self.app.print( f'{e}')
+            self.print( f'`red`ERROR:` cant found python libs in game folder: [`bold`{pathPython}`]')
+            self.print( f'{e}')
 
         tempLine = ''
         self.shortPath      = self.gameName + '\\'
@@ -140,7 +141,7 @@ class GameRenpy:
 
     def checkSelectedGame( self):
         if not self.gameName:
-            self.app.print( '`red`Error` with game folder. `navy`No game selected!`', True)
+            self.print( '`red`Error` with game folder. `navy`No game selected!`', True)
 
     def getPathGame( self):
         self.checkSelectedGame( )
@@ -199,9 +200,9 @@ class GameRenpy:
         """
         ref = re.findall( r'[\[\]]', tLine)
         if len( ref) % 2 != 0:
-            self.app.print( '`red`WARNING`:')
-            self.app.print( f'`bold`Open brackets` in (`bold`{tLine}`).')
-            self.app.print( f'Original string: (`bold`{oLine}`)')
+            self.print( '`red`WARNING`:')
+            self.print( f'`bold`Open brackets` in (`bold`{tLine}`).')
+            self.print( f'Original string: (`bold`{oLine}`)')
 
             ref = re.findall( r'\S*', tLine)
             for rel in ref:
@@ -210,7 +211,7 @@ class GameRenpy:
                 elif ']' in rel and '[' not in rel:
                     tLine = tLine.replace(rel, '[' + rel)
 
-            self.app.print( f'I try to fix it: (`bold`{tLine}`)')
+            self.print( f'I try to fix it: (`bold`{tLine}`)')
         return tLine
 
     def correctTranslate( self, fix):                                           # корректировка всяких косяков первода, надо перписать...
@@ -259,7 +260,7 @@ class GameRenpy:
                         # if tResultSC[i] != '[123]':
                         tLine = tLine.replace( tResultSC[i], value)              # заменяем переведенные кривые теги оригинальными по порядку
                     except IndexError:
-                        self.app.print( f'`red`IndexError` with tag replace [{tResultSC}] in line [{tLine}]')
+                        self.print( f'`red`IndexError` with tag replace [{tResultSC}] in line [{tLine}]')
 
         return tLine   #.replace( '[123]', '')
 

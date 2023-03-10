@@ -1,44 +1,37 @@
 # "^(..[^:]*):([0-9]+):?([0-9]+)?:? (.*)$",
 # https://www.sublimetext.com/docs/build_systems.html#exec_options
-# import pickle
-# import tkinter as tk
 import os
 import re
-import threading
 import shutil
-from datetime import datetime
-
+import threading
 import subprocess
+from datetime import datetime
 from shutil import ignore_patterns  # copytree, rmtree
-from fontTools.ttLib import TTFont
 
-from gameClass import GameRenpy
-from guiClass import YoFrame
-from renTrans import RenTrans
-from settings import settings
-from menuFinder import menuFindVars
-from tlBackScript import backTLtoScriptClick
-from transClass import Translator, RPAClass
-from tagsReplace import tagsLoad, tagsSave, tagsCopy, tagsChange, tagsInTLFolder
 import filesClass as files
+from guiClass import YoFrame
+from settings import settings
+from gameClass import GameRenpy
+from tagsReplace import TagsClass
+from fontTools.ttLib import TTFont
+from menuFinder import menuFindVars
+from transClass import Translator, RPAClass
+from tlBackScript import backTLtoScriptClick
 ########################################################################################################################
 
-rent    = RenTrans()
+
 app     = YoFrame()
 game    = GameRenpy( app)
 rpaArch = RPAClass(  app, game)
 trans   = Translator(app)
-
-rent.print = app.print
-
-reTrans     = re.compile( r'"(.+?)"')
+tags    = TagsClass( game)
+reTrans = re.compile( r'"(.+?)"')
 # reTrans     = re.compile(r'(["])')
 # reTrans     = re.compile(r'"(.*[a-zA-Z].*")(?:( \(.*\))?)')
 # reTrans     = re.compile(r'"(.*[\w].*?)"')
 # reTrans     = re.compile( r'"(.*?[A-Za-z].*?)"')
-
-
 ########################################################################################################################
+
 
 def btnCopyTLStuff(event, old=None, new=None, updateList=True):
     pathGame = game.getPathGame()
@@ -124,7 +117,7 @@ def listFileStats( _event, path=False, withTL=True, withStat=False, ext='.rpy'):
     fileList = files.getFolderList(path, ext=ext, withTL=withTL, withStat=withStat)
     app.listFileUpdate( fileList)
     if path == files.folderTL:
-        tagsInTLFolder( app, game, fileList)
+        tags.load( fileList)
 
 
 def btnMakeTempFiles( _event):
@@ -457,30 +450,6 @@ def tabOnChange( event):
         child.lastScan = datetime.today().timestamp()
 
 
-def btnMenuFindVars(_event):
-    menuFindVars( app, game)
-
-
-def btnTagsChange(_event):
-    tagsChange( app, game)
-
-
-def btnTagsLoad( _event):
-    tagsLoad( app, game)
-
-
-def btnTagsSave( _event):
-    tagsSave( app, game)
-
-
-def btnTagsCopy( _event):
-    tagsCopy( app, game)
-
-
-def btnBackTLtoScriptClick( ):
-    backTLtoScriptClick( app, game)
-
-
 #######################################################################################################
 
 
@@ -494,9 +463,7 @@ def main():
         app.labelsSet(totalLines, totalSizes)
 
     app.listFileUpdate(fileList)
-    tagsInTLFolder( app, game, fileList)
-
-    # listFileStats( app, files.folderTL)
+    tags.load( fileList)
 
     app.listGames.bind(     '<Double-1>',           listGamesDClick, add=True)
     app.btnGameRescan.bind( '<ButtonRelease-1>',    game.gameListScan)
@@ -507,9 +474,8 @@ def main():
     app.btnDecompile.bind(  '<ButtonRelease-1>', btnDecompile)
     app.btnRunRenpy.bind(   '<ButtonRelease-1>', btnRunSDKClick)
     app.btnFontsCopy.bind(  '<ButtonRelease-1>', btnCopyFontsStuff)
-    app.btnMenuFinder.bind( '<ButtonRelease-1>', btnMenuFindVars)
+    app.btnMenuFinder.bind( '<ButtonRelease-1>', lambda event, _game=game: menuFindVars( event, _game))
     app.btnCopyTL.bind(     '<ButtonRelease-1>', btnCopyTLStuff)
-    # app.btnWordDic.bind(    '<ButtonRelease-1>', btnWordDicClick)
 
     app.btnTLScan.bind(     '<ButtonRelease-1>', listFileStats)
     app.btnMakeTemp.bind(   '<ButtonRelease-1>', btnMakeTempFiles)
@@ -518,21 +484,19 @@ def main():
     app.btnCopyRPY.bind(    '<ButtonRelease-1>', btnCopyRPYBack)
     app.btnRunGame.bind(    '<ButtonRelease-1>', btnRunGameClick)
 
-    app.btnTagCopy.bind(    '<ButtonRelease-1>', btnTagsCopy)
+    app.btnTagCopy.bind(    '<ButtonRelease-1>', tags.copyRight)
     app.btnTagClear.bind(   '<ButtonRelease-1>', app.tagsClear)
-    app.btnTempRepl.bind(   '<ButtonRelease-1>', btnTagsChange)
-    app.btnTagsSave.bind(   '<ButtonRelease-1>', btnTagsSave)
-    app.btnTagsLoad.bind(   '<ButtonRelease-1>', btnTagsLoad)
+    app.btnTempRepl.bind(   '<ButtonRelease-1>', tags.replace)
+    app.btnTagsSave.bind(   '<ButtonRelease-1>', tags.saveFile)
+    app.btnTagsLoad.bind(   '<ButtonRelease-1>', tags.loadFile)
 
     app.chAllEcxt['command'] = getListFilesRPA
 
     app.filemenu.insert_command( 1, label="Find & Replace")
     app.filemenu.insert_command( 2, label="WordDIC replacer", command=btnWordDicClick)
-    app.filemenu.insert_command( 3, label="backTL to script", command=btnBackTLtoScriptClick)
+    app.filemenu.insert_command( 3, label="backTL to script", command=lambda: backTLtoScriptClick( game))
 
     app.tabControl.bind("<<NotebookTabChanged>>", tabOnChange)
-    # app.after( 1000, app.updateUI())
-
     app.mainloop()
 
 

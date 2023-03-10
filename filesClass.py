@@ -7,12 +7,11 @@ from guiClass import YoFrame
 
 app = YoFrame()
 
-folderWork  = settings['workFolder']
+folderWork  = settings['folderWORK']
 folderTL    = settings['folderTL']  # 'workFolder\\tl\\'
 folderTEMP  = settings['folderTEMP']  # 'workFolder\\temp\\'
 folderTRANS = settings['folderTRANS']  # 'workFolder\\trans\\'
 folderRPY   = settings['folderRPY']  # 'workFolder\\tl_done\\'
-# folderIND   = settings['folderIND']  # 'workFolder\\tl_done\\'
 rootPath    = os.path.abspath(os.getcwd()) + '\\'  # C:\GitHub\renTrans\
 folderSDK   = settings['folderSDK']  # noqa: E221
 fileSkip    = settings['fileSkip']
@@ -132,7 +131,7 @@ def loadDicFromFile( gameName: str) -> dict:
         return
 
     global jData
-    fileName = f"{rootPath}tagsLists\\{gameName}.json"
+    fileName = f"{settings['folderTAGS']}{gameName}.json"
 
     if os.path.exists( fileName):
         with open( fileName) as f:
@@ -149,7 +148,7 @@ def writeDicToFile( fileText: dict, gameName: str) -> None:
         return
 
     global jData
-    fileName = f"{rootPath}tagsLists\\{gameName}.json"
+    fileName = f"{settings['folderTAGS']}{gameName}.json"
 
     if len( jData) < 1:
         app.print( "Empty jData. Try loaded from file...")

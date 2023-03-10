@@ -12,136 +12,128 @@ reZamena = [
 ]
 
 
-def tagListMake( game, oLine: str):
-    for reZam in reZamena:
-        oResult = re.findall( reZam, oLine)
+class TagsClass:
+    def __init__(self, game) -> None:
+        self.game   = game
+        self.app    = game.app
+        self.print  = game.print
 
-        if oResult:
-            for value in oResult:
-                if value not in game.listTempTags:
-                    game.listTempTags[value] = {'count': 0, 'item': value}  # выписываем в словарь тэги в квадратных скобках
-                game.listTempTags[value]['count'] += 1
+    def makeList( self, oLine: str):
+        for reZam in reZamena:
+            oResult = re.findall( reZam, oLine)
 
+            if oResult:
+                for value in oResult:
+                    if value not in self.game.listTempTags:
+                        self.game.listTempTags[value] = {'count': 0, 'item': value}  # выписываем в словарь тэги в квадратных скобках
+                    self.game.listTempTags[value]['count'] += 1
 
-def tagsInTLFolder( app, game, fileList):
-    game.listTempTags = {}
-    for fileName in fileList:
-        fileData, _error = files.readFileToList( fileName)
-        for line in fileData:
-            if ( '    #' in line) or ( '    old' in line):
-                tagListMake( game, line)
+    def load( self, fileList):
+        self.game.listTempTags = {}
+        for fileName in fileList:
+            fileData, _error = files.readFileToList( fileName)
+            for line in fileData:
+                if ( '    #' in line) or ( '    old' in line):
+                    self.makeList( line)
 
-    app.textTag['state'] = tk.NORMAL
-    tagListInsertRead( game, app.textTag, longStr=True)
-    app.textTag['state'] = tk.DISABLED
+        self.app.textTag['state'] = tk.NORMAL
+        self.loadToTextBox(self.app.textTag, longStr=True)
+        self.app.textTag['state'] = tk.DISABLED
 
+    def replace( self, _event):
+        dictTemp    = {}
+        textLine01  = self.loadToTextBox(keyList=True)
+        texLineEng  = self.app.textEng.get(1.0, tk.END)
+        textLine02  = texLineEng.split('\n')
 
-def tagsChange( app, game):
-    dictTemp    = {}
-    textLine01  = tagListInsertRead( game, keyList=True)
-    texLineEng  = app.textEng.get(1.0, tk.END)
-    textLine02  = texLineEng.split('\n')
+        if len( texLineEng) <= 1:
+            self.print( 'Nothing to change, skipped...', True)
+            return
 
-    if len( texLineEng) <= 1:
-        app.print( 'Nothing to change, skipped...', True)
-        return
+        for i, line in enumerate(textLine02):
+            if len( line) >= 1:
+                try:
+                    if line != textLine01[i]:
+                        dictTemp[textLine01[i]] = { 'data': line, 'count': 0}
+                except RuntimeError as e:
+                    self.print( f'-=> Skipped [{line}] -=> [{e}]')
+                except IndexError:
+                    self.print( f'-=> Skipped [{line}] -=> видимо оно лишнее...')
 
-    for i, line in enumerate(textLine02):
-        if len( line) >= 1:
-            try:
-                if line != textLine01[i]:
-                    dictTemp[textLine01[i]] = { 'data': line, 'count': 0}
-            except RuntimeError as e:
-                app.print( f'-=> Skipped [{line}] -=> [{e}]')
-            except IndexError:
-                app.print( f'-=> Skipped [{line}] -=> видимо оно лишнее...')
+        fileList = files.getFolderList(files.folderTL, '.rpy', silent=True)
+        for fileNameTemp in fileList:
+            # ТУТ НЕ НАДО В ЛИСТ!!!
+            with open(fileNameTemp, 'r', encoding='utf-8') as file:
+                fileData = file.read()
 
-    fileList = files.getFolderList(files.folderTL, '.rpy', silent=True)
-    for fileNameTemp in fileList:
-        # ТУТ НЕ НАДО В ЛИСТ!!!
-        with open(fileNameTemp, 'r', encoding='utf-8') as file:
-            fileData = file.read()
+            for tempLine, tempValue in dictTemp.items():
+                if tempLine != tempValue['data']:
+                    tempValue['count'] += fileData.count( tempLine)
+                    fileData = fileData.replace( tempLine, str( tempValue['data']))  # + '[123]')
+            # ТУТ ТОЖЕ НЕ НАДО
+            with open( fileNameTemp, 'w', encoding='utf-8') as file:
+                file.write(fileData)
 
-        for tempLine, tempValue in dictTemp.items():
-            if tempLine != tempValue['data']:
-                tempValue['count'] += fileData.count( tempLine)
-                fileData = fileData.replace( tempLine, str( tempValue['data']))  # + '[123]')
-        # ТУТ ТОЖЕ НЕ НАДО
-        with open( fileNameTemp, 'w', encoding='utf-8') as file:
-            file.write(fileData)
-
-    if len( dictTemp) >= 1:
-        app.print('Change brackets tags in temp files...', True)
-        for tempLine, tempValue in dictTemp.items():
-            app.print( f'-=> `red`{tempValue["count"]:3}` `bold`{tempLine}` -=> `bold`{tempValue["data"]}`')
-    else:
-        app.print('No one tag changed, skipped...')
-
-
-def tagsCopy( app, game):
-    tagListInsertRead( game, app.textEng)
-    app.tagsCopy()
-
-
-def tagListInsertRead( game, textBox=None, longStr=None, retList=None, keyList=None):
-    returnList = []
-    sortedList = {k: game.listTempTags[k] for k in sorted(game.listTempTags)}
-
-    if textBox:
-        textBox.delete( '1.0', tk.END)
-        if len( sortedList) >= 1:
-            textBox['width'] = min( len( max( sortedList, key=len)) + 10, 70)
+        if len( dictTemp) >= 1:
+            self.print('Change brackets tags in temp files...', True)
+            for tempLine, tempValue in dictTemp.items():
+                self.print( f'-=> `red`{tempValue["count"]:3}` `bold`{tempLine}` -=> `bold`{tempValue["data"]}`')
         else:
-            textBox['width'] = 20
+            self.print('No one tag changed, skipped...')
 
-    for strTag in sortedList:
-        if retList:
-            returnList.append(game.listTempTags[strTag]["item"])
-        elif keyList:
-            returnList.append( strTag)
-        else:
-            if longStr:
-                textBox.insert(tk.END, f'{game.listTempTags[strTag]["count"]:3}| {game.listTempTags[strTag]["item"][:65]}\n')
+    def copyRight( self, _event):
+        self.loadToTextBox(self.app.textEng)
+        self.app.tagsCopy()
+
+    def loadToTextBox(self, textBox=None, longStr=None, retList=None, keyList=None):
+        returnList = []
+        sortedList = {k: self.game.listTempTags[k] for k in sorted( self.game.listTempTags)}
+
+        if textBox:
+            textBox.delete( '1.0', tk.END)
+            if len( sortedList) >= 1:
+                textBox['width'] = min( len( max( sortedList, key=len)) + 10, 70)
             else:
-                textBox.insert(tk.END, f'{game.listTempTags[strTag]["item"][:65]}\n')
-    return returnList
+                textBox['width'] = 20
 
+        for strTag in sortedList:
+            if retList:
+                returnList.append( self.game.listTempTags[strTag]["item"])
+            elif keyList:
+                returnList.append( strTag)
+            else:
+                if longStr:
+                    textBox.insert(tk.END, f'{ self.game.listTempTags[strTag]["count"]:3}| { self.game.listTempTags[strTag]["item"][:65]}\n')
+                else:
+                    textBox.insert(tk.END, f'{ self.game.listTempTags[strTag]["item"][:65]}\n')
+        return returnList
 
-def tagsLoad( app, game):
-    gameTag = files.loadDicFromFile( game.gameNameClear)
+    def loadFile( self, _event):
+        gameTag = files.loadDicFromFile( self.game.gameNameClear)
 
-    if gameTag:
-        for ind in gameTag.keys():
-            if ( ind in game.listTempTags) and ( gameTag[ind] != game.listTempTags[ind]['item']):
-                game.listTempTags[ind]["item"] = gameTag[ind]
+        if gameTag:
+            for ind in gameTag.keys():
+                if ( ind in self.game.listTempTags) and ( gameTag[ind] != self.game.listTempTags[ind]['item']):
+                    self.game.listTempTags[ind]["item"] = gameTag[ind]
 
-        tagListInsertRead( game, app.textEng)
+            self.loadToTextBox(self.app.textEng)
 
+    def saveFile( self, _event):
+        textLine01  = self.loadToTextBox(keyList=True)
+        texLineEng  = self.app.textEng.get(1.0, tk.END)
+        textLine02  = texLineEng.split('\n')
 
-def tagsSave( app, game):
-    textLine01  = tagListInsertRead( game, keyList=True)
-    texLineEng  = app.textEng.get(1.0, tk.END)
-    textLine02  = texLineEng.split('\n')
+        for i, line in enumerate(textLine02):
+            if len( line) >= 1:
+                try:
+                    if line != textLine01[i]:
 
-    for i, line in enumerate(textLine02):
-        if len( line) >= 1:
-            try:
-                if line != textLine01[i]:
+                        self.game.listTempTags[textLine01[i]]["item"] = line
 
-                    game.listTempTags[textLine01[i]]["item"] = line
+                        # dictTemp[textLine01[i]] = { 'data': line, 'count': 0}
+                except RuntimeError as e:
+                    self.print( f'-=> Skipped [{line}] -=> [{e}]')
+                except IndexError:
+                    self.print( f'-=> Skipped [{line}] -=> видимо оно лишнее...')
 
-                    # dictTemp[textLine01[i]] = { 'data': line, 'count': 0}
-            except RuntimeError as e:
-                app.print( f'-=> Skipped [{line}] -=> [{e}]')
-            except IndexError:
-                app.print( f'-=> Skipped [{line}] -=> видимо оно лишнее...')
-
-    files.writeDicToFile( game.listTempTags, game.gameNameClear)
-
-
-    def main():
-        pass
-
-    if __name__ == '__main__':
-        main()
-
+        files.writeDicToFile( self.game.listTempTags, self.game.gameNameClear)

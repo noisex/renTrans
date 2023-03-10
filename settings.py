@@ -1,26 +1,30 @@
-workFolder          = 'c:\\RenTrans\\workFolder\\'  # noqa: E221
+renTransFolder      = 'c:\\RenTrans\\'
+workFolder          = 'workFolder\\'
 
 settings = {
     'TRLEN'         : 4950,  # 4700 for GoogleTranslate
     'testWait'      : 0.07,
     'engTRANS'      : False,
+    'backupFolder'  : 'Backup',
     'engLine'       : '\\n{i}{size=-5}{color=#999}',
     'itemSize'      : '{size=-5}{color=#777} ',
+
+    'folderList'    : ( 'tl', 'temp', 'trans', 'tl_done'),
+
+    'folderLOGS'    : 'logs\\',
     'gameFolder'    :  'D:\\AdGames\\',
     'gameFolderList': ['D:\\AdGames\\', 'c:\\AdGames\\' ],
 
-    'backupFolder'  : 'Backup',
-    'folderList'    : ( 'tl', 'temp', 'trans', 'tl_done'),
+    'folderWORK'    : workFolder,
+    'folderRENTRANS': renTransFolder,
+    'folderGAME'    : f'{renTransFolder}game\\',
+    'folderTAGS'    : f'{renTransFolder}tags\\',
+    'folderSDK'     : f'{renTransFolder}renpy-sdk\\',
+    'folderTL'      : f'{renTransFolder}{workFolder}tl\\',
+    'folderTEMP'    : f'{renTransFolder}{workFolder}temp\\',
+    'folderTRANS'   : f'{renTransFolder}{workFolder}trans\\',
+    'folderRPY'     : f'{renTransFolder}{workFolder}tl_done\\',
 
-    'workFolder'    : workFolder,  # noqa: E203
-    'folderTL'      : workFolder + 'tl\\',
-    'folderTEMP'    : workFolder + 'temp\\',
-    # 'folderIND'     : workFolder + 'ind\\',
-    'folderTRANS'   : workFolder + 'trans\\',
-    'folderRPY'     : workFolder + 'tl_done\\',  # noqa: E203
-    'folderGAME'    : workFolder + 'game\\',  # noqa: E203
-    'folderLOGS'    : 'logs\\',
-    'folderSDK'     : 'c:\\RenTrans\\renpy-sdk\\',
     'extension': [
         '.rpyc',
         '.rpy',
